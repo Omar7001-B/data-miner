@@ -121,7 +121,7 @@ else:
 
     # Display helpful tips
     st.markdown("""
-    <div style="background-color:#262730; padding:15px; border-radius:5px; border-left:4px solid #FF4B4B;">
+    <div class="stTips">
       <h4>📋 Data Loading Tips</h4>
       <ul>
         <li>Make sure your CSV or Excel file has proper formatting</li>

@@ -2,7 +2,16 @@ import streamlit as st
 import os
 from utils import load_css, create_footer, create_card
 
-st.set_page_config(page_title="DataMiner Home", page_icon="🏠", layout="wide")
+# Initialize theme in session state if not present
+if 'theme' not in st.session_state:
+    st.session_state.theme = 'dark'
+
+# Configure page with current theme
+st.set_page_config(
+    page_title="DataMiner Home",
+    page_icon="🏠",
+    layout="wide"
+)
 
 # Load custom CSS
 load_css()
@@ -25,7 +34,7 @@ No coding required - our interactive tools make data analysis accessible to ever
 
 # Quick start guide in a colored container
 st.markdown("""
-<div style="background-color:#262730; padding:20px; border-radius:5px; margin-bottom:20px">
+<div class="quick-start-guide">
 <h3>🏁 Quick Start Guide</h3>
 <ol>
 <li><b>Upload your data</b> - Go to the <a href="Data_Upload" target="_self">Data Upload</a> page and import your CSV, Excel, or JSON file</li>
