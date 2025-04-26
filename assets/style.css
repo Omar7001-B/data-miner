@@ -1,10 +1,12 @@
-/* Custom Streamlit Styles */
+/* Footer style */
 .footer {
     text-align: center;
-    color: #808495;
+    color: var(--text-color);
     font-size: 0.8rem;
+    opacity: 0.7;
     margin-top: 50px;
     margin-bottom: 20px;
+    padding: 20px;
 }
 
 /* Headers */
@@ -74,17 +76,7 @@ a:hover {
     text-decoration: underline;
 }
 
-/* Add animation for the header */
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.stTitle {
-    animation: fadeIn 0.8s ease-out;
-}
-
-/* Card styling */
+/* Card style */
 .stCard {
     background-color: var(--background-color);
     padding: 15px;
@@ -106,28 +98,6 @@ a:hover {
 
 .stCard div {
     color: var(--text-color);
-}
-
-/* Code block styling */
-.stMarkdown pre {
-    background-color: var(--secondary-background-color) !important;
-    border: 1px solid rgba(128, 128, 128, 0.2);
-    color: var(--text-color) !important;
-}
-
-/* Markdown text color */
-.stMarkdown {
-    color: var(--text-color);
-}
-
-/* Footer styling */
-footer {
-    text-align: center;
-    padding: 20px;
-    font-size: 14px;
-    color: var(--text-color);
-    opacity: 0.7;
-    margin-top: 50px;
 }
 
 /* Tips section styling */
@@ -155,4 +125,21 @@ footer {
     margin: 5px 0;
 }
 
-/* Add your custom styles below */ 
+/* Code block styling */
+.stMarkdown pre {
+    background-color: var(--secondary-background-color) !important;
+    border: 1px solid rgba(128, 128, 128, 0.2);
+    color: var(--text-color) !important;
+}
+
+/* Markdown text color */
+.stMarkdown {
+    color: var(--text-color);
+}
+
+/* Animations */
+.stTitle {
+    animation: fadeIn 0.8s ease-out;
+}
+
+/* Add your custom styles below */
