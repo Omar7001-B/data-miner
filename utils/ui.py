@@ -42,16 +42,10 @@ def create_card(title, content, icon="📊", color="#262730"):
     icon : str
         An emoji or icon to display
     color : str
-        Border color for the card
+        Border color for the card (deprecated, using theme colors now)
     """
     st.markdown(f"""
-    <div style="
-        background-color:{color}; 
-        padding:15px; 
-        border-radius:5px; 
-        margin-bottom:15px;
-        border-left: 4px solid #FF4B4B;
-    ">
+    <div class="stCard">
         <h4>{icon} {title}</h4>
         <div>{content}</div>
     </div>

@@ -1,33 +1,44 @@
 /* Custom Streamlit Styles */
 .footer {
     text-align: center;
-    color: #888;
-    font-size: 0.95em;
-    margin-top: 2em;
-    margin-bottom: 1em;
+    color: #808495;
+    font-size: 0.8rem;
+    margin-top: 50px;
+    margin-bottom: 20px;
 }
 
-/* Add more custom styles below as needed */
+/* Headers */
 h1 {
-    color: #FF4B4B;
+    color: var(--primary-color);
     margin-bottom: 1rem;
 }
 
 h3 {
     margin-top: 1.5rem;
     margin-bottom: 1rem;
-    color: #FF4B4B;
+    color: var(--primary-color);
 }
 
 /* Style for tab content */
 .stTabs [data-baseweb="tab-panel"] {
     padding-top: 1rem;
     padding-bottom: 1rem;
+    background-color: var(--background-color);
+}
+
+/* Tab styling */
+.stTabs [data-baseweb="tab"] {
+    background-color: var(--background-color) !important;
+}
+
+.stTabs [data-baseweb="tab-list"] {
+    background-color: var(--background-color) !important;
+    border-bottom-color: var(--secondary-background-color) !important;
 }
 
 /* Make links more visible */
 a {
-    color: #FF4B4B !important;
+    color: var(--primary-color) !important;
     text-decoration: none;
 }
 
@@ -36,8 +47,31 @@ a:hover {
 }
 
 /* Style for the quick start container */
-div[style*="background-color:#262730"] {
-    border-left: 4px solid #FF4B4B;
+.quick-start-guide {
+    background-color: var(--secondary-background-color);
+    padding: 20px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+    border: 1px solid rgba(128, 128, 128, 0.2);
+    border-left: 4px solid var(--primary-color);
+}
+
+.quick-start-guide h3 {
+    color: var(--text-color);
+    margin-bottom: 15px;
+}
+
+.quick-start-guide ol {
+    color: var(--text-color);
+}
+
+.quick-start-guide a {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.quick-start-guide a:hover {
+    text-decoration: underline;
 }
 
 /* Add animation for the header */
@@ -48,4 +82,77 @@ div[style*="background-color:#262730"] {
 
 .stTitle {
     animation: fadeIn 0.8s ease-out;
-} 
+}
+
+/* Card styling */
+.stCard {
+    background-color: var(--background-color);
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    border-left: 4px solid var(--primary-color);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+    transition: all 0.3s cubic-bezier(.25,.8,.25,1);
+}
+
+.stCard:hover {
+    box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
+}
+
+.stCard h4 {
+    margin-top: 0;
+    color: var(--text-color);
+}
+
+.stCard div {
+    color: var(--text-color);
+}
+
+/* Code block styling */
+.stMarkdown pre {
+    background-color: var(--secondary-background-color) !important;
+    border: 1px solid rgba(128, 128, 128, 0.2);
+    color: var(--text-color) !important;
+}
+
+/* Markdown text color */
+.stMarkdown {
+    color: var(--text-color);
+}
+
+/* Footer styling */
+footer {
+    text-align: center;
+    padding: 20px;
+    font-size: 14px;
+    color: var(--text-color);
+    opacity: 0.7;
+    margin-top: 50px;
+}
+
+/* Tips section styling */
+.stTips {
+    background-color: var(--background-color);
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    border-left: 4px solid #FF4B4B;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+}
+
+.stTips h4 {
+    margin-top: 0;
+    color: var(--text-color);
+}
+
+.stTips ul {
+    color: var(--text-color);
+    margin: 0;
+    padding-left: 20px;
+}
+
+.stTips li {
+    margin: 5px 0;
+}
+
+/* Add your custom styles below */ 
