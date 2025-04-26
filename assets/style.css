@@ -1,0 +1,51 @@
+/* Custom Streamlit Styles */
+.footer {
+    text-align: center;
+    color: #888;
+    font-size: 0.95em;
+    margin-top: 2em;
+    margin-bottom: 1em;
+}
+
+/* Add more custom styles below as needed */
+h1 {
+    color: #FF4B4B;
+    margin-bottom: 1rem;
+}
+
+h3 {
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+    color: #FF4B4B;
+}
+
+/* Style for tab content */
+.stTabs [data-baseweb="tab-panel"] {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+}
+
+/* Make links more visible */
+a {
+    color: #FF4B4B !important;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* Style for the quick start container */
+div[style*="background-color:#262730"] {
+    border-left: 4px solid #FF4B4B;
+}
+
+/* Add animation for the header */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.stTitle {
+    animation: fadeIn 0.8s ease-out;
+} 
