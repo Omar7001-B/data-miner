@@ -37,6 +37,7 @@ venv.bak/
 .project
 .pydevproject
 .settings/
+.cursor/
 
 # Streamlit specific
 .streamlit/secrets.toml
