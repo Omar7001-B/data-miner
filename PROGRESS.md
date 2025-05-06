@@ -31,7 +31,7 @@ This file tracks the progress of implementing features for the DataMiner applica
 ### Machine Learning Models
 #### Classification Models
 - [x] Logistic Regression
-- [ ] Decision Tree (in progress)
+- [x] Decision Tree
 - [ ] K-Nearest Neighbors (KNN)
 
 #### Regression Models
