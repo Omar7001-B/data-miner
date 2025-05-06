@@ -40,7 +40,7 @@ This file tracks the progress of implementing features for the DataMiner applica
 ### Model Evaluation & Visualization
 - [x] Classification metrics implementation
 - [x] Regression metrics implementation
-- [ ] Visualization tools for model evaluation
+- [x] Visualization tools for model evaluation
 - [x] Custom data visualizations
 
 ### User Interaction & Results
