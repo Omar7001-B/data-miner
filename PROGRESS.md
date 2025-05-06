@@ -38,8 +38,8 @@ This file tracks the progress of implementing features for the DataMiner applica
 - [x] Linear Regression
 
 ### Model Evaluation & Visualization
-- [ ] Classification metrics implementation
-- [ ] Regression metrics implementation
+- [x] Classification metrics implementation
+- [x] Regression metrics implementation
 - [ ] Visualization tools for model evaluation
 - [x] Custom data visualizations
 
