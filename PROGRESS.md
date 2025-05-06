@@ -35,7 +35,7 @@ This file tracks the progress of implementing features for the DataMiner applica
 - [x] K-Nearest Neighbors (KNN)
 
 #### Regression Models
-- [ ] Linear Regression
+- [x] Linear Regression
 
 ### Model Evaluation & Visualization
 - [ ] Classification metrics implementation

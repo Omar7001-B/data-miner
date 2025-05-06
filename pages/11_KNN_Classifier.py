@@ -630,14 +630,648 @@ if df is not None:
     
     with tab3:
         st.header("Evaluate Model")
-        st.info("Train a model first using the 'Train Model' tab.")
-    
+        
+        # Check if a model has been trained
+        if st.session_state.get('knn_trained_model') is None:
+            st.warning("⚠️ You need to train a model first. Go to the 'Train Model' tab to train a KNN model.")
+        else:
+            # Get model and data from session state
+            model = st.session_state.knn_trained_model
+            pipeline = st.session_state.knn_pipeline
+            X_test = st.session_state.knn_X_test
+            y_test = st.session_state.knn_y_test
+            feature_names = st.session_state.knn_feature_names
+            classes = st.session_state.knn_classes
+            metrics = st.session_state.knn_model_metrics
+            k_value = metrics["k Value"]
+            
+            # Create subtabs for different evaluation aspects
+            eval_tab1, eval_tab2, eval_tab3 = st.tabs([
+                "Model Performance", 
+                "Neighbor Analysis", 
+                "Error Analysis"
+            ])
+            
+            with eval_tab1:
+                st.subheader("Performance Metrics")
+                
+                # Display metrics in a nice format with descriptions
+                col1, col2, col3 = st.columns(3)
+                
+                with col1:
+                    st.metric("Accuracy", f"{metrics['Accuracy']:.4f}")
+                    st.caption("Percentage of correct predictions")
+                    
+                    if len(classes) <= 2:  # Binary classification
+                        st.metric("Precision", f"{metrics['Precision']:.4f}")
+                        st.caption("Ratio of true positives to all predicted positives")
+                    else:  # Multiclass
+                        st.metric("Precision (macro)", f"{metrics['Precision (macro)']:.4f}")
+                        st.caption("Average precision across all classes")
+                
+                with col2:
+                    if len(classes) <= 2:  # Binary classification
+                        st.metric("Recall", f"{metrics['Recall']:.4f}")
+                        st.caption("Ratio of true positives to all actual positives")
+                        
+                        st.metric("F1 Score", f"{metrics['F1 Score']:.4f}")
+                        st.caption("Harmonic mean of precision and recall")
+                    else:  # Multiclass
+                        st.metric("Recall (macro)", f"{metrics['Recall (macro)']:.4f}")
+                        st.caption("Average recall across all classes")
+                        
+                        st.metric("F1 Score (macro)", f"{metrics['F1 Score (macro)']:.4f}")
+                        st.caption("Harmonic mean of macro precision and recall")
+                
+                with col3:
+                    st.metric("k Value", k_value)
+                    st.caption("Number of neighbors used for prediction")
+                    
+                    st.metric("Test Set Size", f"{metrics['Test Set Size']}")
+                    st.caption("Number of samples in the test set")
+                    
+                    st.metric("Training Time", f"{metrics['Training Time']:.2f} sec")
+                    st.caption("Time taken to train the model")
+                
+                # Confusion Matrix
+                st.subheader("Confusion Matrix")
+                
+                # Get predictions
+                y_pred = pipeline.predict(X_test)
+                cm = confusion_matrix(y_test, y_pred)
+                
+                # Normalize confusion matrix option
+                normalize_cm = st.checkbox("Normalize Confusion Matrix", value=False)
+                
+                if normalize_cm:
+                    # Normalize by row (true labels)
+                    cm_norm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+                    cm_display = cm_norm
+                    fmt = '.2f'
+                else:
+                    cm_display = cm
+                    fmt = 'd'
+                
+                # Create heatmap using plotly for interactivity
+                fig = px.imshow(
+                    cm_display,
+                    labels=dict(x="Predicted Label", y="True Label", color="Count"),
+                    x=classes,
+                    y=classes,
+                    color_continuous_scale="Blues",
+                    aspect="equal"
+                )
+                
+                fig.update_layout(
+                    title="Confusion Matrix",
+                    xaxis_title="Predicted Label",
+                    yaxis_title="True Label",
+                    width=600,
+                    height=600,
+                )
+                
+                # Add text annotations to the heatmap
+                for i in range(len(classes)):
+                    for j in range(len(classes)):
+                        if normalize_cm:
+                            text = f"{cm_display[i, j]:.2f}"
+                        else:
+                            text = f"{cm_display[i, j]}"
+                        
+                        fig.add_annotation(
+                            x=j,
+                            y=i,
+                            text=text,
+                            showarrow=False,
+                            font=dict(color="white" if cm_display[i, j] > cm_display.max() / 2 else "black")
+                        )
+                
+                st.plotly_chart(fig)
+                
+                # Classification Report
+                st.subheader("Classification Report")
+                report = classification_report(y_test, y_pred, target_names=classes, output_dict=True)
+                report_df = pd.DataFrame(report).transpose()
+                
+                # Style the dataframe
+                st.dataframe(
+                    report_df.style.format({
+                        "precision": "{:.3f}",
+                        "recall": "{:.3f}",
+                        "f1-score": "{:.3f}",
+                        "support": "{:.0f}"
+                    }),
+                    use_container_width=True
+                )
+            
+            with eval_tab2:
+                st.subheader("Neighbor Analysis")
+                st.info("This tab will provide visualizations and analysis of how neighbors influence predictions.")
+            
+            with eval_tab3:
+                st.subheader("Error Analysis")
+                st.info("This tab will provide insights into model errors and potential improvements.")
+        
+        # Note about model retraining
+        st.info("To retrain the model with different parameters, go back to the 'Train Model' tab.")
+        
     with tab4:
         st.header("Make Predictions")
-        st.info("Train a model first using the 'Train Model' tab.")
         
-else:
-    show_file_required_warning()
+        # Check if a model has been trained
+        if st.session_state.get('knn_trained_model') is None:
+            st.warning("⚠️ You need to train a model first. Go to the 'Train Model' tab to train a KNN model.")
+        else:
+            # Get model and data from session state
+            pipeline = st.session_state.knn_pipeline
+            feature_names = st.session_state.knn_feature_names
+            classes = st.session_state.knn_classes
+            
+            # Create subtabs for different prediction types
+            pred_tab1, pred_tab2, pred_tab3 = st.tabs(["Single Prediction", "Batch Predictions", "Upload File"])
+            
+            with pred_tab1:
+                st.subheader("Make a Single Prediction")
+                st.markdown("Enter values for each feature to get a prediction.")
+                
+                # Create a form for input values
+                with st.form("single_prediction_form"):
+                    # Create input fields for each feature
+                    input_values = {}
+                    
+                    # Group features in columns (3 per row)
+                    num_features = len(feature_names)
+                    num_rows = (num_features + 2) // 3  # Ceiling division
+                    
+                    for row in range(num_rows):
+                        cols = st.columns(3)
+                        for col_idx in range(3):
+                            feature_idx = row * 3 + col_idx
+                            if feature_idx < num_features:
+                                feature = feature_names[feature_idx]
+                                
+                                # Determine input type based on original dataframe
+                                if df[feature].dtype in ['int64', 'float64']:
+                                    # Numeric input
+                                    min_val = float(df[feature].min())
+                                    max_val = float(df[feature].max())
+                                    mean_val = float(df[feature].mean())
+                                    
+                                    # Use slider for numeric input
+                                    input_values[feature] = cols[col_idx].slider(
+                                        f"{feature}",
+                                        min_value=min_val,
+                                        max_value=max_val,
+                                        value=mean_val,
+                                        format="%.2f" if df[feature].dtype == 'float64' else "%d"
+                                    )
+                                else:
+                                    # Categorical input (dropdown)
+                                    unique_values = df[feature].dropna().unique().tolist()
+                                    input_values[feature] = cols[col_idx].selectbox(
+                                        f"{feature}",
+                                        options=unique_values,
+                                        index=0
+                                    )
+                    
+                    # Submit button
+                    predict_button = st.form_submit_button("Make Prediction")
+                
+                # Make prediction when button is clicked
+                if predict_button:
+                    # Convert input to DataFrame
+                    input_df = pd.DataFrame([input_values])
+                    
+                    # Make prediction
+                    prediction = pipeline.predict(input_df)[0]
+                    prediction_probs = pipeline.predict_proba(input_df)[0]
+                    
+                    # Convert prediction index to class name
+                    predicted_class = classes[prediction]
+                    
+                    # Display prediction
+                    st.success(f"### Prediction: {predicted_class}")
+                    
+                    # Display prediction probabilities
+                    st.subheader("Prediction Probabilities")
+                    
+                    # Create DataFrame for probabilities
+                    probs_df = pd.DataFrame({
+                        'Class': classes,
+                        'Probability': prediction_probs
+                    }).sort_values('Probability', ascending=False)
+                    
+                    # Format as percentages
+                    probs_df['Probability'] = probs_df['Probability'] * 100
+                    
+                    # Display as bar chart
+                    fig = px.bar(
+                        probs_df,
+                        x='Class',
+                        y='Probability',
+                        title="Prediction Probabilities",
+                        labels={'Probability': 'Probability (%)'},
+                        color='Probability',
+                        color_continuous_scale='Blues'
+                    )
+                    
+                    # Add percentage labels
+                    fig.update_traces(
+                        texttemplate='%{y:.1f}%',
+                        textposition='outside'
+                    )
+                    
+                    # Format y-axis as percentage
+                    fig.update_layout(
+                        yaxis=dict(
+                            ticksuffix='%',
+                            range=[0, max(100, probs_df['Probability'].max() * 1.1)]  # Add some padding
+                        )
+                    )
+                    
+                    st.plotly_chart(fig, use_container_width=True)
+                    
+                    # KNN-specific visualization: nearest neighbors
+                    st.subheader("Nearest Neighbors Analysis")
+                    
+                    try:
+                        # Get the KNN model from the pipeline
+                        knn_model = st.session_state.knn_trained_model
+                        
+                        # Preprocess the input data
+                        preprocessor = pipeline.named_steps['preprocessor']
+                        X_train_processed = preprocessor.transform(st.session_state.knn_X_train)
+                        X_input_processed = preprocessor.transform(input_df)
+                        
+                        # Get nearest neighbors
+                        k_value = knn_model.n_neighbors
+                        distances, indices = knn_model.kneighbors(X_input_processed)
+                        
+                        # Get neighbor samples
+                        neighbor_indices = indices[0]
+                        neighbors_X = st.session_state.knn_X_train.iloc[neighbor_indices]
+                        neighbors_y = st.session_state.knn_y_train[neighbor_indices]
+                        
+                        # Create a dataframe with neighbors info
+                        neighbors_df = neighbors_X.copy()
+                        neighbors_df['Distance'] = distances[0]
+                        neighbors_df['Class'] = [classes[y] for y in neighbors_y]
+                        
+                        # Sort by distance
+                        neighbors_df = neighbors_df.sort_values('Distance')
+                        
+                        # Show neighbors
+                        st.markdown(f"These are the {k_value} nearest neighbors that influenced the prediction:")
+                        st.dataframe(neighbors_df, use_container_width=True)
+                        
+                        # Visualize class distribution in nearest neighbors
+                        class_counts = pd.Series([classes[y] for y in neighbors_y]).value_counts()
+                        
+                        # Create pie chart
+                        fig = px.pie(
+                            values=class_counts.values,
+                            names=class_counts.index,
+                            title="Class Distribution in Nearest Neighbors",
+                            color_discrete_sequence=px.colors.qualitative.Pastel
+                        )
+                        
+                        st.plotly_chart(fig, use_container_width=True)
+                        
+                        # Add explanation of how KNN made this prediction
+                        most_common_class = class_counts.idxmax()
+                        most_common_count = class_counts.max()
+                        
+                        st.info(f"""
+                        **How KNN Made This Prediction**:
+                        
+                        1. The model found the {k_value} closest neighbors to this data point
+                        2. Out of these neighbors, {most_common_count} belong to class "{most_common_class}"
+                        3. Therefore, the model predicted the class as "{predicted_class}"
+                        
+                        In KNN, the prediction is based on a majority vote of the nearest neighbors.
+                        """)
+                        
+                    except Exception as e:
+                        st.error(f"Could not analyze nearest neighbors: {str(e)}")
+            
+            with pred_tab2:
+                st.subheader("Make Batch Predictions")
+                st.markdown("Use the current dataset to make predictions for multiple samples.")
+                
+                # Select which part of the dataset to use
+                data_option = st.radio(
+                    "Select data for prediction:",
+                    options=["Use test set (if available)", "Use entire dataset", "Use random samples"],
+                    horizontal=True
+                )
+                
+                # Get data based on selection
+                if data_option == "Use test set (if available)":
+                    if st.session_state.get('knn_X_test') is not None:
+                        X_pred = st.session_state.knn_X_test
+                        st.info(f"Using {len(X_pred)} samples from the test set")
+                    else:
+                        X_pred = df[feature_names]
+                        st.warning("Test set not available. Using entire dataset.")
+                elif data_option == "Use random samples":
+                    # Select number of random samples
+                    n_samples = st.slider(
+                        "Number of random samples:",
+                        min_value=1,
+                        max_value=min(100, len(df)),
+                        value=min(10, len(df))
+                    )
+                    
+                    # Get random samples
+                    X_pred = df[feature_names].sample(n=n_samples, random_state=42)
+                    st.info(f"Using {len(X_pred)} random samples from the dataset")
+                else:  # Use entire dataset
+                    X_pred = df[feature_names]
+                    st.info(f"Using all {len(X_pred)} samples from the dataset")
+                
+                # Number of samples to display
+                display_limit = st.slider(
+                    "Number of results to display:",
+                    min_value=1,
+                    max_value=min(100, len(X_pred)),
+                    value=min(10, len(X_pred))
+                )
+                
+                # Make predictions button
+                if st.button("Generate Predictions"):
+                    # Show progress
+                    progress_bar = st.progress(0)
+                    status_text = st.empty()
+                    
+                    try:
+                        status_text.text("Making predictions...")
+                        
+                        # Make predictions
+                        predictions = pipeline.predict(X_pred)
+                        prediction_probs = pipeline.predict_proba(X_pred)
+                        
+                        progress_bar.progress(50)
+                        status_text.text("Processing results...")
+                        
+                        # Create results DataFrame
+                        results_df = X_pred.copy()
+                        results_df['Predicted'] = [classes[p] for p in predictions]
+                        
+                        # Add probability columns for each class
+                        for i, cls in enumerate(classes):
+                            results_df[f'Prob_{cls}'] = prediction_probs[:, i]
+                        
+                        # If actual values are available (from test set)
+                        if data_option == "Use test set (if available)" and st.session_state.get('knn_y_test') is not None:
+                            y_true = st.session_state.knn_y_test
+                            results_df['Actual'] = [classes[y] for y in y_true]
+                            results_df['Correct'] = results_df['Predicted'] == results_df['Actual']
+                            
+                            # Calculate accuracy
+                            accuracy = results_df['Correct'].mean() * 100
+                            st.metric("Prediction Accuracy", f"{accuracy:.2f}%")
+                        
+                        progress_bar.progress(100)
+                        status_text.text("Predictions complete!")
+                        
+                        # Display results
+                        st.subheader("Prediction Results")
+                        st.dataframe(results_df.head(display_limit), use_container_width=True)
+                        
+                        # Download results
+                        st.download_button(
+                            "Download All Prediction Results",
+                            results_df.to_csv(index=False).encode('utf-8'),
+                            "knn_predictions.csv",
+                            "text/csv",
+                            key='download-batch-predictions'
+                        )
+                        
+                        # Show distribution of predictions
+                        st.subheader("Prediction Distribution")
+                        
+                        # Count predictions by class
+                        pred_counts = results_df['Predicted'].value_counts().reset_index()
+                        pred_counts.columns = ['Class', 'Count']
+                        
+                        # Add percentage
+                        total_count = pred_counts['Count'].sum()
+                        pred_counts['Percentage'] = pred_counts['Count'] / total_count * 100
+                        
+                        # Create bar chart
+                        fig = px.bar(
+                            pred_counts,
+                            x='Class',
+                            y='Count',
+                            title="Distribution of Predictions",
+                            text='Percentage',
+                            color='Count',
+                            color_continuous_scale='Blues'
+                        )
+                        
+                        # Add percentage labels
+                        fig.update_traces(
+                            texttemplate='%{text:.1f}%',
+                            textposition='outside'
+                        )
+                        
+                        st.plotly_chart(fig, use_container_width=True)
+                        
+                    except Exception as e:
+                        st.error(f"An error occurred during prediction: {str(e)}")
+            
+            with pred_tab3:
+                st.subheader("Upload File for Predictions")
+                st.markdown("""
+                Upload a CSV or Excel file with the same feature columns as your training data.
+                The model will generate predictions for each row.
+                """)
+                
+                # File upload
+                uploaded_file = st.file_uploader("Upload your file", type=['csv', 'xlsx', 'xls'])
+                
+                if uploaded_file is not None:
+                    try:
+                        # Read file
+                        if uploaded_file.name.endswith('.csv'):
+                            predict_df = pd.read_csv(uploaded_file)
+                        else:
+                            predict_df = pd.read_excel(uploaded_file)
+                        
+                        # Show file preview
+                        st.subheader("File Preview")
+                        st.dataframe(predict_df.head(5), use_container_width=True)
+                        
+                        # Check if required features are present
+                        missing_features = [f for f in feature_names if f not in predict_df.columns]
+                        
+                        if missing_features:
+                            st.error(f"Missing required features: {', '.join(missing_features)}")
+                            st.info(f"Your file must contain all the features used during training: {', '.join(feature_names)}")
+                        else:
+                            # Extract features
+                            X_upload = predict_df[feature_names]
+                            
+                            # Number of samples to display
+                            display_limit = st.slider(
+                                "Number of results to display:",
+                                min_value=1,
+                                max_value=min(100, len(X_upload)),
+                                value=min(10, len(X_upload))
+                            )
+                            
+                            # Make predictions button
+                            if st.button("Generate Predictions from File"):
+                                # Show progress
+                                progress_bar = st.progress(0)
+                                status_text = st.empty()
+                                
+                                try:
+                                    status_text.text("Making predictions...")
+                                    
+                                    # Make predictions
+                                    predictions = pipeline.predict(X_upload)
+                                    prediction_probs = pipeline.predict_proba(X_upload)
+                                    
+                                    progress_bar.progress(50)
+                                    status_text.text("Processing results...")
+                                    
+                                    # Create results DataFrame (include all original columns)
+                                    results_df = predict_df.copy()
+                                    results_df['Predicted'] = [classes[p] for p in predictions]
+                                    
+                                    # Add probability columns for each class
+                                    for i, cls in enumerate(classes):
+                                        results_df[f'Prob_{cls}'] = prediction_probs[:, i]
+                                    
+                                    progress_bar.progress(100)
+                                    status_text.text("Predictions complete!")
+                                    
+                                    # Display results
+                                    st.subheader("Prediction Results")
+                                    st.dataframe(results_df.head(display_limit), use_container_width=True)
+                                    
+                                    # Download results
+                                    st.download_button(
+                                        "Download All Prediction Results",
+                                        results_df.to_csv(index=False).encode('utf-8'),
+                                        "knn_file_predictions.csv",
+                                        "text/csv",
+                                        key='download-file-predictions'
+                                    )
+                                    
+                                    # Show distribution of predictions
+                                    st.subheader("Prediction Distribution")
+                                    
+                                    # Count predictions by class
+                                    pred_counts = results_df['Predicted'].value_counts().reset_index()
+                                    pred_counts.columns = ['Class', 'Count']
+                                    
+                                    # Add percentage
+                                    total_count = pred_counts['Count'].sum()
+                                    pred_counts['Percentage'] = pred_counts['Count'] / total_count * 100
+                                    
+                                    # Create bar chart
+                                    fig = px.bar(
+                                        pred_counts,
+                                        x='Class',
+                                        y='Count',
+                                        title="Distribution of Predictions",
+                                        text='Percentage',
+                                        color='Count',
+                                        color_continuous_scale='Blues'
+                                    )
+                                    
+                                    # Add percentage labels
+                                    fig.update_traces(
+                                        texttemplate='%{text:.1f}%',
+                                        textposition='outside'
+                                    )
+                                    
+                                    st.plotly_chart(fig, use_container_width=True)
+                                    
+                                except Exception as e:
+                                    st.error(f"An error occurred during prediction: {str(e)}")
+                    
+                    except Exception as e:
+                        st.error(f"Error reading file: {str(e)}")
+                
+                # Instructions
+                with st.expander("File Format Instructions"):
+                    st.markdown(f"""
+                    ### Required File Format
+                    
+                    Your file should:
+                    
+                    1. Be in CSV or Excel format
+                    2. Contain columns for all features used in training
+                    3. Have the same column names as the training data
+                    
+                    The required feature columns are:
+                    ```
+                    {', '.join(feature_names)}
+                    ```
+                    
+                    No target column is needed since we're making predictions.
+                    """)
+            
+            # Add model integration information section
+            with st.expander("Model Integration Information"):
+                st.markdown("""
+                ### How to Use This Model in Your Applications
+                
+                To integrate this trained model into your own applications:
+                
+                1. Train the model and download it from the "Train Model" tab
+                2. Load the model in your Python application using:
+                   ```python
+                   import pickle
+                   
+                   # Load the model
+                   with open('knn_model.pkl', 'rb') as f:
+                       model = pickle.load(f)
+                   
+                   # Make predictions
+                   predictions = model.predict(X_new)
+                   ```
+                
+                3. Ensure your input data has the same format and features as the training data
+                
+                #### API Integration Example
+                
+                ```python
+                from flask import Flask, request, jsonify
+                import pandas as pd
+                import pickle
+                
+                app = Flask(__name__)
+                
+                # Load the model
+                with open('knn_model.pkl', 'rb') as f:
+                    model = pickle.load(f)
+                
+                @app.route('/predict', methods=['POST'])
+                def predict():
+                    # Get JSON data from request
+                    data = request.get_json()
+                    
+                    # Convert to DataFrame
+                    input_df = pd.DataFrame(data, index=[0])
+                    
+                    # Make prediction
+                    prediction = model.predict(input_df)[0]
+                    probabilities = model.predict_proba(input_df)[0].tolist()
+                    
+                    # Return result
+                    return jsonify({
+                        'prediction': prediction,
+                        'probabilities': probabilities
+                    })
+                
+                if __name__ == '__main__':
+                    app.run(debug=True)
+                ```
+                """)
 
 # Footer
 create_footer() 
