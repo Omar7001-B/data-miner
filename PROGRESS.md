@@ -26,11 +26,11 @@ This file tracks the progress of implementing features for the DataMiner applica
 - [x] Min-Max scaling
 - [x] Z-score normalization
 - [x] Decimal scaling
-- [ ] Feature selection interface
+- [x] Feature selection interface
 
 ### Machine Learning Models
 #### Classification Models
-- [ ] Logistic Regression
+- [x] Logistic Regression
 - [ ] Decision Tree
 - [ ] K-Nearest Neighbors (KNN)
 
