@@ -1222,555 +1222,557 @@ def display_regression_metrics(y_true, y_pred, target_name="Target"):
     href_csv = f'<a href="data:file/csv;base64,{b64_csv}" download="regression_predictions.csv">Download Predictions with Residuals (CSV)</a>'
     st.markdown(href_csv, unsafe_allow_html=True)
 
-else:
-    # Show warning if no data is loaded
+# This is outside any tab context - check if data is loaded
+if df is None:
     show_file_required_warning()
-
-with tab3:
-    st.header("Custom Evaluation")
-    
-    st.markdown("""
-    Define your own custom metrics and evaluation criteria.
-    This section allows you to create specialized visualizations and metrics 
-    for your specific use case.
-    """)
-    
-    st.subheader("Data Source")
-    
-    # Data input options
-    data_input = st.radio(
-        "Select data source:",
-        options=["Upload custom data", "Generate sample data"],
-        horizontal=True
-    )
-    
-    if data_input == "Upload custom data":
-        # File uploader
-        uploaded_file = st.file_uploader(
-            "Upload CSV file with your data", 
-            type=["csv"], 
-            key="custom_eval_upload"
+else:
+    # Only display tab3 content if data is loaded
+    with tab3:
+        st.header("Custom Evaluation")
+        
+        st.markdown("""
+        Define your own custom metrics and evaluation criteria.
+        This section allows you to create specialized visualizations and metrics 
+        for your specific use case.
+        """)
+        
+        st.subheader("Data Source")
+        
+        # Data input options
+        data_input = st.radio(
+            "Select data source:",
+            options=["Upload custom data", "Generate sample data"],
+            horizontal=True
         )
         
-        if uploaded_file is not None:
-            try:
-                # Read the data
-                custom_df = pd.read_csv(uploaded_file)
-                
-                # Display preview
-                st.subheader("Data Preview")
-                st.dataframe(custom_df.head(), use_container_width=True)
-                
-                # Continue with custom evaluation
-                if not custom_df.empty:
-                    st.session_state.custom_eval_df = custom_df
-                    st.success("Data loaded successfully!")
-            
-            except Exception as e:
-                st.error(f"Error reading file: {str(e)}")
-    
-    else:  # Generate sample data
-        st.subheader("Generate Sample Data")
-        
-        # Data generation options
-        data_type = st.selectbox(
-            "Select the type of data to generate:",
-            options=["Regression", "Classification", "Time Series"]
-        )
-        
-        # Number of samples
-        n_samples = st.slider("Number of samples:", min_value=50, max_value=1000, value=200, step=50)
-        
-        # Noise level
-        noise = st.slider("Noise level:", min_value=0.0, max_value=1.0, value=0.2, step=0.1)
-        
-        # Generate button
-        if st.button("Generate Data"):
-            if data_type == "Regression":
-                # Generate regression data
-                np.random.seed(42)
-                X = np.random.rand(n_samples, 2)
-                y_true = 3*X[:, 0] + 2*X[:, 1] + np.random.normal(0, noise, size=n_samples)
-                y_pred = 3*X[:, 0] + 2*X[:, 1] + np.random.normal(0, noise*1.2, size=n_samples)
-                
-                custom_df = pd.DataFrame({
-                    'feature1': X[:, 0],
-                    'feature2': X[:, 1],
-                    'actual': y_true,
-                    'predicted': y_pred,
-                    'residual': y_true - y_pred
-                })
-            
-            elif data_type == "Classification":
-                # Generate classification data
-                np.random.seed(42)
-                X = np.random.rand(n_samples, 2)
-                y_true = (0.5*X[:, 0] + 0.5*X[:, 1] > 0.5).astype(int)
-                
-                # Add some noise to predictions
-                prob_correct = 0.8 - noise * 0.3  # Higher noise = lower probability of correct prediction
-                y_pred = np.copy(y_true)
-                flip_idx = np.random.rand(n_samples) > prob_correct
-                y_pred[flip_idx] = 1 - y_pred[flip_idx]
-                
-                # Probabilities
-                probs = np.random.rand(n_samples)
-                probs[y_pred == 1] = 0.5 + probs[y_pred == 1] * 0.5
-                probs[y_pred == 0] = probs[y_pred == 0] * 0.5
-                
-                custom_df = pd.DataFrame({
-                    'feature1': X[:, 0],
-                    'feature2': X[:, 1],
-                    'actual_class': y_true,
-                    'predicted_class': y_pred,
-                    'probability': probs
-                })
-            
-            else:  # Time Series
-                # Generate time series data
-                np.random.seed(42)
-                dates = pd.date_range(start='2023-01-01', periods=n_samples)
-                
-                # Create trend, seasonality, and noise
-                trend = np.linspace(0, 3, n_samples)
-                seasonality = 2 * np.sin(np.linspace(0, 4*np.pi, n_samples))
-                noise_component = np.random.normal(0, noise, size=n_samples)
-                
-                # Combine components
-                y_true = trend + seasonality + noise_component
-                
-                # Create predictions with slightly different parameters
-                pred_noise = np.random.normal(0, noise, size=n_samples)
-                y_pred = trend + seasonality * 0.9 + pred_noise
-                
-                custom_df = pd.DataFrame({
-                    'date': dates,
-                    'actual': y_true,
-                    'predicted': y_pred,
-                    'residual': y_true - y_pred
-                })
-            
-            st.session_state.custom_eval_df = custom_df
-            st.success("Sample data generated successfully!")
-            
-            # Show preview
-            st.subheader("Data Preview")
-            st.dataframe(custom_df.head(), use_container_width=True)
-    
-    # Check if data is available for custom evaluation
-    if 'custom_eval_df' in st.session_state and not st.session_state.custom_eval_df.empty:
-        custom_df = st.session_state.custom_eval_df
-        
-        st.subheader("Custom Evaluation Tools")
-        
-        # Create tabs for different custom evaluation tools
-        custom_tab1, custom_tab2, custom_tab3 = st.tabs([
-            "Custom Visualization", 
-            "Custom Metrics", 
-            "Data Exploration"
-        ])
-        
-        with custom_tab1:
-            st.subheader("Custom Visualization")
-            
-            # Get columns for visualization
-            numeric_cols = custom_df.select_dtypes(include=[np.number]).columns.tolist()
-            date_cols = [col for col in custom_df.columns if custom_df[col].dtype == 'datetime64[ns]']
-            all_cols = custom_df.columns.tolist()
-            
-            # Plot type selection
-            plot_type = st.selectbox(
-                "Select visualization type:",
-                options=["Scatter Plot", "Line Chart", "Bar Chart", "Histogram", "Box Plot", "Heatmap"]
+        if data_input == "Upload custom data":
+            # File uploader
+            uploaded_file = st.file_uploader(
+                "Upload CSV file with your data", 
+                type=["csv"], 
+                key="custom_eval_upload"
             )
             
-            if plot_type == "Scatter Plot":
-                # Column selection for scatter plot
-                x_col = st.selectbox("X-axis:", options=all_cols, key="scatter_x")
-                y_col = st.selectbox("Y-axis:", options=numeric_cols, key="scatter_y")
-                
-                # Optional color column
-                color_option = st.checkbox("Add color dimension")
-                color_col = None
-                if color_option:
-                    color_col = st.selectbox("Color by:", options=all_cols)
-                
-                # Create plot
-                if st.button("Generate Scatter Plot"):
-                    fig = px.scatter(
-                        custom_df, 
-                        x=x_col, 
-                        y=y_col,
-                        color=color_col,
-                        title=f"{y_col} vs {x_col}",
-                        labels={x_col: x_col, y_col: y_col},
-                        opacity=0.7
-                    )
+            if uploaded_file is not None:
+                try:
+                    # Read the data
+                    custom_df = pd.read_csv(uploaded_file)
                     
-                    st.plotly_chart(fig, use_container_width=True)
-            
-            elif plot_type == "Line Chart":
-                # Column selection for line chart
-                x_col = st.selectbox("X-axis:", options=all_cols, key="line_x")
-                
-                # Allow multiple Y columns
-                y_cols = st.multiselect("Y-axis (multiple):", options=numeric_cols, key="line_y")
-                
-                # Create plot
-                if st.button("Generate Line Chart") and y_cols:
-                    fig = px.line(
-                        custom_df, 
-                        x=x_col, 
-                        y=y_cols,
-                        title=f"Line Chart",
-                        labels={y_col: y_col for y_col in y_cols}
-                    )
+                    # Display preview
+                    st.subheader("Data Preview")
+                    st.dataframe(custom_df.head(), use_container_width=True)
                     
-                    st.plotly_chart(fig, use_container_width=True)
-            
-            elif plot_type == "Bar Chart":
-                # Column selection for bar chart
-                x_col = st.selectbox("X-axis (categories):", options=all_cols, key="bar_x")
-                y_col = st.selectbox("Y-axis (values):", options=numeric_cols, key="bar_y")
+                    # Continue with custom evaluation
+                    if not custom_df.empty:
+                        st.session_state.custom_eval_df = custom_df
+                        st.success("Data loaded successfully!")
                 
-                # Optional color column
-                color_option = st.checkbox("Add color dimension", key="bar_color_opt")
-                color_col = None
-                if color_option:
-                    color_col = st.selectbox("Color by:", options=all_cols, key="bar_color")
-                
-                # Create plot
-                if st.button("Generate Bar Chart"):
-                    fig = px.bar(
-                        custom_df, 
-                        x=x_col, 
-                        y=y_col,
-                        color=color_col,
-                        title=f"Bar Chart of {y_col} by {x_col}",
-                        labels={x_col: x_col, y_col: y_col}
-                    )
-                    
-                    st.plotly_chart(fig, use_container_width=True)
-            
-            elif plot_type == "Histogram":
-                # Column selection for histogram
-                col = st.selectbox("Select column:", options=numeric_cols, key="hist_col")
-                
-                # Histogram options
-                bins = st.slider("Number of bins:", min_value=5, max_value=100, value=20)
-                
-                # Create plot
-                if st.button("Generate Histogram"):
-                    fig = px.histogram(
-                        custom_df, 
-                        x=col,
-                        nbins=bins,
-                        marginal="box",
-                        title=f"Histogram of {col}",
-                        labels={col: col}
-                    )
-                    
-                    st.plotly_chart(fig, use_container_width=True)
-            
-            elif plot_type == "Box Plot":
-                # Column selection for box plot
-                y_col = st.selectbox("Values:", options=numeric_cols, key="box_y")
-                
-                # Optional category column
-                category_option = st.checkbox("Group by category")
-                x_col = None
-                if category_option:
-                    x_col = st.selectbox("Category:", options=all_cols, key="box_x")
-                
-                # Create plot
-                if st.button("Generate Box Plot"):
-                    fig = px.box(
-                        custom_df, 
-                        x=x_col, 
-                        y=y_col,
-                        title=f"Box Plot of {y_col}" + (f" by {x_col}" if x_col else ""),
-                        labels={x_col: x_col, y_col: y_col} if x_col else {y_col: y_col}
-                    )
-                    
-                    st.plotly_chart(fig, use_container_width=True)
-            
-            elif plot_type == "Heatmap":
-                # Use only numeric columns for correlation
-                if len(numeric_cols) < 2:
-                    st.warning("Need at least 2 numeric columns for a heatmap.")
-                else:
-                    # Correlation method
-                    corr_method = st.selectbox(
-                        "Correlation method:",
-                        options=["pearson", "spearman", "kendall"],
-                        key="heatmap_method"
-                    )
-                    
-                    # Create plot
-                    if st.button("Generate Heatmap"):
-                        # Calculate correlation matrix
-                        corr_matrix = custom_df[numeric_cols].corr(method=corr_method)
-                        
-                        # Create heatmap
-                        fig = px.imshow(
-                            corr_matrix,
-                            text_auto='.2f',
-                            color_continuous_scale='RdBu_r',
-                            title=f"{corr_method.capitalize()} Correlation Heatmap"
-                        )
-                        
-                        st.plotly_chart(fig, use_container_width=True)
+                except Exception as e:
+                    st.error(f"Error reading file: {str(e)}")
         
-        with custom_tab2:
-            st.subheader("Custom Metrics")
+        else:  # Generate sample data
+            st.subheader("Generate Sample Data")
             
-            # Get columns for metrics
-            numeric_cols = custom_df.select_dtypes(include=[np.number]).columns.tolist()
+            # Data generation options
+            data_type = st.selectbox(
+                "Select the type of data to generate:",
+                options=["Regression", "Classification", "Time Series"]
+            )
             
-            if len(numeric_cols) < 2:
-                st.warning("Need at least 2 numeric columns to calculate metrics.")
-            else:
-                # Column selection for actual and predicted values
-                actual_col = st.selectbox("Actual values:", options=numeric_cols, key="metric_actual")
-                pred_col = st.selectbox("Predicted values:", options=numeric_cols, key="metric_pred")
+            # Number of samples
+            n_samples = st.slider("Number of samples:", min_value=50, max_value=1000, value=200, step=50)
+            
+            # Noise level
+            noise = st.slider("Noise level:", min_value=0.0, max_value=1.0, value=0.2, step=0.1)
+            
+            # Generate button
+            if st.button("Generate Data"):
+                if data_type == "Regression":
+                    # Generate regression data
+                    np.random.seed(42)
+                    X = np.random.rand(n_samples, 2)
+                    y_true = 3*X[:, 0] + 2*X[:, 1] + np.random.normal(0, noise, size=n_samples)
+                    y_pred = 3*X[:, 0] + 2*X[:, 1] + np.random.normal(0, noise*1.2, size=n_samples)
+                    
+                    custom_df = pd.DataFrame({
+                        'feature1': X[:, 0],
+                        'feature2': X[:, 1],
+                        'actual': y_true,
+                        'predicted': y_pred,
+                        'residual': y_true - y_pred
+                    })
                 
-                # Problem type
-                problem_type = st.radio(
-                    "Problem type:",
-                    options=["Regression", "Binary Classification"],
-                    horizontal=True
+                elif data_type == "Classification":
+                    # Generate classification data
+                    np.random.seed(42)
+                    X = np.random.rand(n_samples, 2)
+                    y_true = (0.5*X[:, 0] + 0.5*X[:, 1] > 0.5).astype(int)
+                    
+                    # Add some noise to predictions
+                    prob_correct = 0.8 - noise * 0.3  # Higher noise = lower probability of correct prediction
+                    y_pred = np.copy(y_true)
+                    flip_idx = np.random.rand(n_samples) > prob_correct
+                    y_pred[flip_idx] = 1 - y_pred[flip_idx]
+                    
+                    # Probabilities
+                    probs = np.random.rand(n_samples)
+                    probs[y_pred == 1] = 0.5 + probs[y_pred == 1] * 0.5
+                    probs[y_pred == 0] = probs[y_pred == 0] * 0.5
+                    
+                    custom_df = pd.DataFrame({
+                        'feature1': X[:, 0],
+                        'feature2': X[:, 1],
+                        'actual_class': y_true,
+                        'predicted_class': y_pred,
+                        'probability': probs
+                    })
+                
+                else:  # Time Series
+                    # Generate time series data
+                    np.random.seed(42)
+                    dates = pd.date_range(start='2023-01-01', periods=n_samples)
+                    
+                    # Create trend, seasonality, and noise
+                    trend = np.linspace(0, 3, n_samples)
+                    seasonality = 2 * np.sin(np.linspace(0, 4*np.pi, n_samples))
+                    noise_component = np.random.normal(0, noise, size=n_samples)
+                    
+                    # Combine components
+                    y_true = trend + seasonality + noise_component
+                    
+                    # Create predictions with slightly different parameters
+                    pred_noise = np.random.normal(0, noise, size=n_samples)
+                    y_pred = trend + seasonality * 0.9 + pred_noise
+                    
+                    custom_df = pd.DataFrame({
+                        'date': dates,
+                        'actual': y_true,
+                        'predicted': y_pred,
+                        'residual': y_true - y_pred
+                    })
+                
+                st.session_state.custom_eval_df = custom_df
+                st.success("Sample data generated successfully!")
+                
+                # Show preview
+                st.subheader("Data Preview")
+                st.dataframe(custom_df.head(), use_container_width=True)
+        
+        # Check if data is available for custom evaluation
+        if 'custom_eval_df' in st.session_state and not st.session_state.custom_eval_df.empty:
+            custom_df = st.session_state.custom_eval_df
+            
+            st.subheader("Custom Evaluation Tools")
+            
+            # Create tabs for different custom evaluation tools
+            custom_tab1, custom_tab2, custom_tab3 = st.tabs([
+                "Custom Visualization", 
+                "Custom Metrics", 
+                "Data Exploration"
+            ])
+            
+            with custom_tab1:
+                st.subheader("Custom Visualization")
+                
+                # Get columns for visualization
+                numeric_cols = custom_df.select_dtypes(include=[np.number]).columns.tolist()
+                date_cols = [col for col in custom_df.columns if custom_df[col].dtype == 'datetime64[ns]']
+                all_cols = custom_df.columns.tolist()
+                
+                # Plot type selection
+                plot_type = st.selectbox(
+                    "Select visualization type:",
+                    options=["Scatter Plot", "Line Chart", "Bar Chart", "Histogram", "Box Plot", "Heatmap"]
                 )
                 
-                # Custom metrics options
-                st.subheader("Select Metrics to Calculate")
-                
-                if problem_type == "Regression":
-                    # Regression metrics options
-                    metrics_to_calc = {}
-                    metrics_to_calc["MSE"] = st.checkbox("Mean Squared Error", value=True)
-                    metrics_to_calc["RMSE"] = st.checkbox("Root Mean Squared Error", value=True)
-                    metrics_to_calc["MAE"] = st.checkbox("Mean Absolute Error", value=True)
-                    metrics_to_calc["MAPE"] = st.checkbox("Mean Absolute Percentage Error", value=True)
-                    metrics_to_calc["R2"] = st.checkbox("R² Score", value=True)
-                    metrics_to_calc["ExplainedVar"] = st.checkbox("Explained Variance", value=True)
-                    metrics_to_calc["MaxError"] = st.checkbox("Maximum Error", value=False)
-                    metrics_to_calc["MedianAE"] = st.checkbox("Median Absolute Error", value=False)
+                if plot_type == "Scatter Plot":
+                    # Column selection for scatter plot
+                    x_col = st.selectbox("X-axis:", options=all_cols, key="scatter_x")
+                    y_col = st.selectbox("Y-axis:", options=numeric_cols, key="scatter_y")
                     
-                    # Custom threshold metrics
-                    threshold_option = st.checkbox("Add threshold-based metrics")
-                    threshold = None
-                    if threshold_option:
-                        threshold = st.number_input("Error threshold:", value=1.0)
-                        metrics_to_calc["ThresholdError"] = True
+                    # Optional color column
+                    color_option = st.checkbox("Add color dimension")
+                    color_col = None
+                    if color_option:
+                        color_col = st.selectbox("Color by:", options=all_cols)
                     
-                    # Calculate metrics button
-                    if st.button("Calculate Selected Metrics"):
-                        # Get values
-                        y_true = custom_df[actual_col].values
-                        y_pred = custom_df[pred_col].values
-                        
-                        # Calculate selected metrics
-                        results = {}
-                        
-                        if metrics_to_calc.get("MSE", False):
-                            results["Mean Squared Error"] = mean_squared_error(y_true, y_pred)
-                        
-                        if metrics_to_calc.get("RMSE", False):
-                            results["Root Mean Squared Error"] = np.sqrt(mean_squared_error(y_true, y_pred))
-                        
-                        if metrics_to_calc.get("MAE", False):
-                            results["Mean Absolute Error"] = mean_absolute_error(y_true, y_pred)
-                        
-                        if metrics_to_calc.get("MAPE", False):
-                            # Handle zeros in y_true
-                            valid_indices = y_true != 0
-                            if np.any(valid_indices):
-                                results["Mean Absolute Percentage Error"] = np.mean(
-                                    np.abs((y_true[valid_indices] - y_pred[valid_indices]) / y_true[valid_indices])
-                                ) * 100
-                            else:
-                                results["Mean Absolute Percentage Error"] = "N/A (division by zero)"
-                        
-                        if metrics_to_calc.get("R2", False):
-                            results["R² Score"] = r2_score(y_true, y_pred)
-                        
-                        if metrics_to_calc.get("ExplainedVar", False):
-                            results["Explained Variance"] = explained_variance_score(y_true, y_pred)
-                        
-                        if metrics_to_calc.get("MaxError", False):
-                            results["Maximum Error"] = np.max(np.abs(y_true - y_pred))
-                        
-                        if metrics_to_calc.get("MedianAE", False):
-                            results["Median Absolute Error"] = np.median(np.abs(y_true - y_pred))
-                        
-                        if metrics_to_calc.get("ThresholdError", False) and threshold is not None:
-                            # Calculate percentage of predictions within threshold
-                            within_threshold = np.abs(y_true - y_pred) <= threshold
-                            results[f"% Within ±{threshold}"] = np.mean(within_threshold) * 100
-                        
-                        # Display results
-                        results_df = pd.DataFrame({
-                            'Metric': list(results.keys()),
-                            'Value': [f"{v:.4f}" if isinstance(v, (int, float)) else v for v in results.values()]
-                        })
-                        
-                        st.dataframe(results_df, use_container_width=True)
-                        
-                        # Visualization of errors
-                        st.subheader("Error Distribution")
-                        
-                        errors = y_true - y_pred
-                        
-                        fig = px.histogram(
-                            errors,
-                            title="Distribution of Errors",
-                            labels={'value': 'Error'},
-                            marginal="box"
+                    # Create plot
+                    if st.button("Generate Scatter Plot"):
+                        fig = px.scatter(
+                            custom_df, 
+                            x=x_col, 
+                            y=y_col,
+                            color=color_col,
+                            title=f"{y_col} vs {x_col}",
+                            labels={x_col: x_col, y_col: y_col},
+                            opacity=0.7
                         )
                         
                         st.plotly_chart(fig, use_container_width=True)
                 
-                else:  # Binary Classification
-                    # Check if data seems appropriate for binary classification
-                    y_true = custom_df[actual_col].values
-                    y_pred = custom_df[pred_col].values
+                elif plot_type == "Line Chart":
+                    # Column selection for line chart
+                    x_col = st.selectbox("X-axis:", options=all_cols, key="line_x")
                     
-                    unique_true = np.unique(y_true)
-                    unique_pred = np.unique(y_pred)
+                    # Allow multiple Y columns
+                    y_cols = st.multiselect("Y-axis (multiple):", options=numeric_cols, key="line_y")
                     
-                    if len(unique_true) > 2 or len(unique_pred) > 2:
-                        st.warning(
-                            "The selected columns contain more than 2 unique values. " +
-                            "For binary classification, data should contain only 2 classes (typically 0 and 1)."
+                    # Create plot
+                    if st.button("Generate Line Chart") and y_cols:
+                        fig = px.line(
+                            custom_df, 
+                            x=x_col, 
+                            y=y_cols,
+                            title=f"Line Chart",
+                            labels={y_col: y_col for y_col in y_cols}
                         )
+                        
+                        st.plotly_chart(fig, use_container_width=True)
+                
+                elif plot_type == "Bar Chart":
+                    # Column selection for bar chart
+                    x_col = st.selectbox("X-axis (categories):", options=all_cols, key="bar_x")
+                    y_col = st.selectbox("Y-axis (values):", options=numeric_cols, key="bar_y")
                     
-                    # Binary classification metrics options
-                    metrics_to_calc = {}
-                    metrics_to_calc["Accuracy"] = st.checkbox("Accuracy", value=True)
-                    metrics_to_calc["Precision"] = st.checkbox("Precision", value=True)
-                    metrics_to_calc["Recall"] = st.checkbox("Recall", value=True)
-                    metrics_to_calc["F1"] = st.checkbox("F1 Score", value=True)
-                    metrics_to_calc["ConfMatrix"] = st.checkbox("Confusion Matrix", value=True)
+                    # Optional color column
+                    color_option = st.checkbox("Add color dimension", key="bar_color_opt")
+                    color_col = None
+                    if color_option:
+                        color_col = st.selectbox("Color by:", options=all_cols, key="bar_color")
                     
-                    # Threshold for binary predictions
-                    threshold_option = st.checkbox("Apply custom threshold to predictions")
-                    threshold = 0.5
-                    if threshold_option:
-                        threshold = st.slider("Classification threshold:", min_value=0.0, max_value=1.0, value=0.5)
-                        st.info(f"Values >= {threshold} will be classified as positive (1)")
+                    # Create plot
+                    if st.button("Generate Bar Chart"):
+                        fig = px.bar(
+                            custom_df, 
+                            x=x_col, 
+                            y=y_col,
+                            color=color_col,
+                            title=f"Bar Chart of {y_col} by {x_col}",
+                            labels={x_col: x_col, y_col: y_col}
+                        )
+                        
+                        st.plotly_chart(fig, use_container_width=True)
+                
+                elif plot_type == "Histogram":
+                    # Column selection for histogram
+                    col = st.selectbox("Select column:", options=numeric_cols, key="hist_col")
                     
-                    # Calculate metrics button
-                    if st.button("Calculate Selected Metrics"):
-                        try:
-                            # Convert to binary if needed
-                            if threshold_option:
-                                y_pred_binary = (y_pred >= threshold).astype(int)
-                            else:
-                                y_pred_binary = y_pred
+                    # Histogram options
+                    bins = st.slider("Number of bins:", min_value=5, max_value=100, value=20)
+                    
+                    # Create plot
+                    if st.button("Generate Histogram"):
+                        fig = px.histogram(
+                            custom_df, 
+                            x=col,
+                            nbins=bins,
+                            marginal="box",
+                            title=f"Histogram of {col}",
+                            labels={col: col}
+                        )
+                        
+                        st.plotly_chart(fig, use_container_width=True)
+                
+                elif plot_type == "Box Plot":
+                    # Column selection for box plot
+                    y_col = st.selectbox("Values:", options=numeric_cols, key="box_y")
+                    
+                    # Optional category column
+                    category_option = st.checkbox("Group by category")
+                    x_col = None
+                    if category_option:
+                        x_col = st.selectbox("Category:", options=all_cols, key="box_x")
+                    
+                    # Create plot
+                    if st.button("Generate Box Plot"):
+                        fig = px.box(
+                            custom_df, 
+                            x=x_col, 
+                            y=y_col,
+                            title=f"Box Plot of {y_col}" + (f" by {x_col}" if x_col else ""),
+                            labels={x_col: x_col, y_col: y_col} if x_col else {y_col: y_col}
+                        )
+                        
+                        st.plotly_chart(fig, use_container_width=True)
+                
+                elif plot_type == "Heatmap":
+                    # Use only numeric columns for correlation
+                    if len(numeric_cols) < 2:
+                        st.warning("Need at least 2 numeric columns for a heatmap.")
+                    else:
+                        # Correlation method
+                        corr_method = st.selectbox(
+                            "Correlation method:",
+                            options=["pearson", "spearman", "kendall"],
+                            key="heatmap_method"
+                        )
+                        
+                        # Create plot
+                        if st.button("Generate Heatmap"):
+                            # Calculate correlation matrix
+                            corr_matrix = custom_df[numeric_cols].corr(method=corr_method)
                             
-                            # Ensure binary values
-                            y_true_binary = y_true.astype(int)
-                            y_pred_binary = y_pred_binary.astype(int)
+                            # Create heatmap
+                            fig = px.imshow(
+                                corr_matrix,
+                                text_auto='.2f',
+                                color_continuous_scale='RdBu_r',
+                                title=f"{corr_method.capitalize()} Correlation Heatmap"
+                            )
+                            
+                            st.plotly_chart(fig, use_container_width=True)
+            
+            with custom_tab2:
+                st.subheader("Custom Metrics")
+                
+                # Get columns for metrics
+                numeric_cols = custom_df.select_dtypes(include=[np.number]).columns.tolist()
+                
+                if len(numeric_cols) < 2:
+                    st.warning("Need at least 2 numeric columns to calculate metrics.")
+                else:
+                    # Column selection for actual and predicted values
+                    actual_col = st.selectbox("Actual values:", options=numeric_cols, key="metric_actual")
+                    pred_col = st.selectbox("Predicted values:", options=numeric_cols, key="metric_pred")
+                    
+                    # Problem type
+                    problem_type = st.radio(
+                        "Problem type:",
+                        options=["Regression", "Binary Classification"],
+                        horizontal=True
+                    )
+                    
+                    # Custom metrics options
+                    st.subheader("Select Metrics to Calculate")
+                    
+                    if problem_type == "Regression":
+                        # Regression metrics options
+                        metrics_to_calc = {}
+                        metrics_to_calc["MSE"] = st.checkbox("Mean Squared Error", value=True)
+                        metrics_to_calc["RMSE"] = st.checkbox("Root Mean Squared Error", value=True)
+                        metrics_to_calc["MAE"] = st.checkbox("Mean Absolute Error", value=True)
+                        metrics_to_calc["MAPE"] = st.checkbox("Mean Absolute Percentage Error", value=True)
+                        metrics_to_calc["R2"] = st.checkbox("R² Score", value=True)
+                        metrics_to_calc["ExplainedVar"] = st.checkbox("Explained Variance", value=True)
+                        metrics_to_calc["MaxError"] = st.checkbox("Maximum Error", value=False)
+                        metrics_to_calc["MedianAE"] = st.checkbox("Median Absolute Error", value=False)
+                        
+                        # Custom threshold metrics
+                        threshold_option = st.checkbox("Add threshold-based metrics")
+                        threshold = None
+                        if threshold_option:
+                            threshold = st.number_input("Error threshold:", value=1.0)
+                            metrics_to_calc["ThresholdError"] = True
+                        
+                        # Calculate metrics button
+                        if st.button("Calculate Selected Metrics"):
+                            # Get values
+                            y_true = custom_df[actual_col].values
+                            y_pred = custom_df[pred_col].values
                             
                             # Calculate selected metrics
                             results = {}
                             
-                            if metrics_to_calc.get("Accuracy", False):
-                                results["Accuracy"] = accuracy_score(y_true_binary, y_pred_binary)
+                            if metrics_to_calc.get("MSE", False):
+                                results["Mean Squared Error"] = mean_squared_error(y_true, y_pred)
                             
-                            if metrics_to_calc.get("Precision", False):
-                                results["Precision"] = precision_score(y_true_binary, y_pred_binary, zero_division=0)
+                            if metrics_to_calc.get("RMSE", False):
+                                results["Root Mean Squared Error"] = np.sqrt(mean_squared_error(y_true, y_pred))
                             
-                            if metrics_to_calc.get("Recall", False):
-                                results["Recall"] = recall_score(y_true_binary, y_pred_binary, zero_division=0)
+                            if metrics_to_calc.get("MAE", False):
+                                results["Mean Absolute Error"] = mean_absolute_error(y_true, y_pred)
                             
-                            if metrics_to_calc.get("F1", False):
-                                results["F1 Score"] = f1_score(y_true_binary, y_pred_binary, zero_division=0)
+                            if metrics_to_calc.get("MAPE", False):
+                                # Handle zeros in y_true
+                                valid_indices = y_true != 0
+                                if np.any(valid_indices):
+                                    results["Mean Absolute Percentage Error"] = np.mean(
+                                        np.abs((y_true[valid_indices] - y_pred[valid_indices]) / y_true[valid_indices])
+                                    ) * 100
+                                else:
+                                    results["Mean Absolute Percentage Error"] = "N/A (division by zero)"
+                            
+                            if metrics_to_calc.get("R2", False):
+                                results["R² Score"] = r2_score(y_true, y_pred)
+                            
+                            if metrics_to_calc.get("ExplainedVar", False):
+                                results["Explained Variance"] = explained_variance_score(y_true, y_pred)
+                            
+                            if metrics_to_calc.get("MaxError", False):
+                                results["Maximum Error"] = np.max(np.abs(y_true - y_pred))
+                            
+                            if metrics_to_calc.get("MedianAE", False):
+                                results["Median Absolute Error"] = np.median(np.abs(y_true - y_pred))
+                            
+                            if metrics_to_calc.get("ThresholdError", False) and threshold is not None:
+                                # Calculate percentage of predictions within threshold
+                                within_threshold = np.abs(y_true - y_pred) <= threshold
+                                results[f"% Within ±{threshold}"] = np.mean(within_threshold) * 100
                             
                             # Display results
                             results_df = pd.DataFrame({
                                 'Metric': list(results.keys()),
-                                'Value': [f"{v:.4f}" for v in results.values()]
+                                'Value': [f"{v:.4f}" if isinstance(v, (int, float)) else v for v in results.values()]
                             })
                             
                             st.dataframe(results_df, use_container_width=True)
                             
-                            # Display confusion matrix if selected
-                            if metrics_to_calc.get("ConfMatrix", False):
-                                st.subheader("Confusion Matrix")
-                                
-                                cm = confusion_matrix(y_true_binary, y_pred_binary)
-                                
-                                fig = px.imshow(
-                                    cm,
-                                    text_auto=True,
-                                    labels=dict(x="Predicted", y="Actual", color="Count"),
-                                    x=['Negative (0)', 'Positive (1)'],
-                                    y=['Negative (0)', 'Positive (1)']
-                                )
-                                
-                                fig.update_layout(
-                                    title="Confusion Matrix",
-                                    xaxis_title="Predicted Class",
-                                    yaxis_title="Actual Class"
-                                )
-                                
-                                st.plotly_chart(fig, use_container_width=True)
+                            # Visualization of errors
+                            st.subheader("Error Distribution")
+                            
+                            errors = y_true - y_pred
+                            
+                            fig = px.histogram(
+                                errors,
+                                title="Distribution of Errors",
+                                labels={'value': 'Error'},
+                                marginal="box"
+                            )
+                            
+                            st.plotly_chart(fig, use_container_width=True)
+                    
+                    else:  # Binary Classification
+                        # Check if data seems appropriate for binary classification
+                        y_true = custom_df[actual_col].values
+                        y_pred = custom_df[pred_col].values
                         
-                        except Exception as e:
-                            st.error(f"Error calculating metrics: {str(e)}")
-                            st.info("Make sure your data is appropriate for binary classification (values should be 0/1 or convertible to binary).")
-        
-        with custom_tab3:
-            st.subheader("Data Exploration")
+                        unique_true = np.unique(y_true)
+                        unique_pred = np.unique(y_pred)
+                        
+                        if len(unique_true) > 2 or len(unique_pred) > 2:
+                            st.warning(
+                                "The selected columns contain more than 2 unique values. " +
+                                "For binary classification, data should contain only 2 classes (typically 0 and 1)."
+                            )
+                        
+                        # Binary classification metrics options
+                        metrics_to_calc = {}
+                        metrics_to_calc["Accuracy"] = st.checkbox("Accuracy", value=True)
+                        metrics_to_calc["Precision"] = st.checkbox("Precision", value=True)
+                        metrics_to_calc["Recall"] = st.checkbox("Recall", value=True)
+                        metrics_to_calc["F1"] = st.checkbox("F1 Score", value=True)
+                        metrics_to_calc["ConfMatrix"] = st.checkbox("Confusion Matrix", value=True)
+                        
+                        # Threshold for binary predictions
+                        threshold_option = st.checkbox("Apply custom threshold to predictions")
+                        threshold = 0.5
+                        if threshold_option:
+                            threshold = st.slider("Classification threshold:", min_value=0.0, max_value=1.0, value=0.5)
+                            st.info(f"Values >= {threshold} will be classified as positive (1)")
+                        
+                        # Calculate metrics button
+                        if st.button("Calculate Selected Metrics"):
+                            try:
+                                # Convert to binary if needed
+                                if threshold_option:
+                                    y_pred_binary = (y_pred >= threshold).astype(int)
+                                else:
+                                    y_pred_binary = y_pred
+                                
+                                # Ensure binary values
+                                y_true_binary = y_true.astype(int)
+                                y_pred_binary = y_pred_binary.astype(int)
+                                
+                                # Calculate selected metrics
+                                results = {}
+                                
+                                if metrics_to_calc.get("Accuracy", False):
+                                    results["Accuracy"] = accuracy_score(y_true_binary, y_pred_binary)
+                                
+                                if metrics_to_calc.get("Precision", False):
+                                    results["Precision"] = precision_score(y_true_binary, y_pred_binary, zero_division=0)
+                                
+                                if metrics_to_calc.get("Recall", False):
+                                    results["Recall"] = recall_score(y_true_binary, y_pred_binary, zero_division=0)
+                                
+                                if metrics_to_calc.get("F1", False):
+                                    results["F1 Score"] = f1_score(y_true_binary, y_pred_binary, zero_division=0)
+                                
+                                # Display results
+                                results_df = pd.DataFrame({
+                                    'Metric': list(results.keys()),
+                                    'Value': [f"{v:.4f}" for v in results.values()]
+                                })
+                                
+                                st.dataframe(results_df, use_container_width=True)
+                                
+                                # Display confusion matrix if selected
+                                if metrics_to_calc.get("ConfMatrix", False):
+                                    st.subheader("Confusion Matrix")
+                                    
+                                    cm = confusion_matrix(y_true_binary, y_pred_binary)
+                                    
+                                    fig = px.imshow(
+                                        cm,
+                                        text_auto=True,
+                                        labels=dict(x="Predicted", y="Actual", color="Count"),
+                                        x=['Negative (0)', 'Positive (1)'],
+                                        y=['Negative (0)', 'Positive (1)']
+                                    )
+                                    
+                                    fig.update_layout(
+                                        title="Confusion Matrix",
+                                        xaxis_title="Predicted Class",
+                                        yaxis_title="Actual Class"
+                                    )
+                                    
+                                    st.plotly_chart(fig, use_container_width=True)
+                            
+                            except Exception as e:
+                                st.error(f"Error calculating metrics: {str(e)}")
+                                st.info("Make sure your data is appropriate for binary classification (values should be 0/1 or convertible to binary).")
             
-            # Summary statistics
-            st.subheader("Summary Statistics")
-            
-            stat_options = st.multiselect(
-                "Select statistics to display:",
-                options=["Count", "Mean", "Standard Deviation", "Min", "25%", "Median (50%)", "75%", "Max"],
-                default=["Count", "Mean", "Standard Deviation", "Min", "Max"]
-            )
-            
-            # Map selected options to pandas describe() names
-            stat_map = {
-                "Count": "count",
-                "Mean": "mean",
-                "Standard Deviation": "std",
-                "Min": "min",
-                "25%": "25%",
-                "Median (50%)": "50%",
-                "75%": "75%",
-                "Max": "max"
-            }
-            
-            if stat_options:
-                # Get stats indices based on selection
-                selected_stats = [stat_map[opt] for opt in stat_options]
+            with custom_tab3:
+                st.subheader("Data Exploration")
                 
-                # Calculate and display statistics
-                desc_df = custom_df.describe().loc[selected_stats]
-                st.dataframe(desc_df, use_container_width=True)
-            
-            # Correlation analysis
-            if len(numeric_cols) >= 2:
-                st.subheader("Correlation Analysis")
+                # Summary statistics
+                st.subheader("Summary Statistics")
                 
-                corr_method = st.selectbox(
-                    "Correlation method:",
-                    options=["pearson", "spearman", "kendall"]
+                stat_options = st.multiselect(
+                    "Select statistics to display:",
+                    options=["Count", "Mean", "Standard Deviation", "Min", "25%", "Median (50%)", "75%", "Max"],
+                    default=["Count", "Mean", "Standard Deviation", "Min", "Max"]
                 )
                 
-                # Calculate correlations
-                corr_matrix = custom_df[numeric_cols].corr(method=corr_method)
+                # Map selected options to pandas describe() names
+                stat_map = {
+                    "Count": "count",
+                    "Mean": "mean",
+                    "Standard Deviation": "std",
+                    "Min": "min",
+                    "25%": "25%",
+                    "Median (50%)": "50%",
+                    "75%": "75%",
+                    "Max": "max"
+                }
                 
-                # Display correlation matrix
-                st.dataframe(corr_matrix.style.background_gradient(cmap='coolwarm'), use_container_width=True)
+                if stat_options:
+                    # Get stats indices based on selection
+                    selected_stats = [stat_map[opt] for opt in stat_options]
+                    
+                    # Calculate and display statistics
+                    desc_df = custom_df.describe().loc[selected_stats]
+                    st.dataframe(desc_df, use_container_width=True)
                 
-                # Highlight highest correlations
-                st.subheader("Highest Correlations")
-                
-                # Get upper triangle of correlation matrix (to avoid duplicates)
+                # Correlation analysis
+                if len(numeric_cols) >= 2:
+                    st.subheader("Correlation Analysis")
+                    
+                    corr_method = st.selectbox(
+                        "Correlation method:",
+                        options=["pearson", "spearman", "kendall"]
+                    )
+                    
+                    # Calculate correlations
+                    corr_matrix = custom_df[numeric_cols].corr(method=corr_method)
+                    
+                    # Display correlation matrix
+                    st.dataframe(corr_matrix.style.background_gradient(cmap='coolwarm'), use_container_width=True)
+                    
+                    # Highlight highest correlations
+                    st.subheader("Highest Correlations")
+                    
+                    # Get upper triangle of correlation matrix (to avoid duplicates)
+
 # Footer
 create_footer() 
