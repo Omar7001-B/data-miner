@@ -23,9 +23,9 @@ This file tracks the progress of implementing features for the DataMiner applica
 - [x] Missing data pattern visualization
 
 ### Data Transformation
-- [ ] Min-Max scaling
-- [ ] Z-score normalization
-- [ ] Decimal scaling
+- [x] Min-Max scaling
+- [x] Z-score normalization
+- [x] Decimal scaling
 - [ ] Feature selection interface
 
 ### Machine Learning Models
