@@ -18,7 +18,7 @@ This file tracks the progress of implementing features for the DataMiner applica
 
 ### Data Cleaning
 - [x] Missing values handling
-- [ ] Duplicate entries removal
+- [x] Duplicate entries removal
 - [ ] Categorical values conversion
 - [x] Missing data pattern visualization
 
