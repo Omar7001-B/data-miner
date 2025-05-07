@@ -641,10 +641,15 @@ if df is not None:
             with eval_tab1:
                 st.subheader("Model Performance Metrics")
                 
-                # Display metrics in a nice format
-                is_multiclass = len(classes) > 2
+                # Fix: Check if classes is None before using len(classes)
+                if classes is None:
+                    is_multiclass = False
+                    st.warning("Class labels are missing. Some metrics and plots may not display correctly. Please retrain the model if this persists.")
+                    classes = ["Class 0", "Class 1"]  # Fallback for binary
+                else:
+                    is_multiclass = len(classes) > 2
                 
-                # Format metrics for display in columns
+                # Display metrics in a nice format
                 metric_cols = st.columns(4)
                 
                 with metric_cols[0]:
