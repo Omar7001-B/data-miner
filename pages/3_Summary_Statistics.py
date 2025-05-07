@@ -10,7 +10,8 @@ from utils import (
     display_dataset_info,
     get_numeric_columns,
     generate_summary_stats,
-    plot_correlation_heatmap
+    plot_correlation_heatmap,
+    plot_distribution
 )
 
 # Initialize runpage in session state if not present
@@ -215,36 +216,13 @@ if st.session_state.runpage == "3_Summary_Statistics" or st.session_state.runpag
                         
                         # Visualizations
                         st.subheader("Distribution Visualization")
-                        
-                        # Box plot
-                        fig, ax = plt.subplots(figsize=(12, 5))
-                        sns.boxplot(data=df_selected[cols_to_analyze], ax=ax)
-                        plt.xticks(rotation=45, ha='right')
-                        st.pyplot(fig)
-                        
-                        # Plot histograms for selected columns
-                        if len(cols_to_analyze) > 0:
-                            st.subheader("Histograms")
-                            num_cols = min(len(cols_to_analyze), 4)  # Up to 4 columns per row
-                            num_rows = (len(cols_to_analyze) - 1) // num_cols + 1
-                            
-                            fig, axes = plt.subplots(num_rows, num_cols, figsize=(14, 3 * num_rows))
-                            if num_rows == 1 and num_cols == 1:
-                                axes = np.array([axes])
-                            axes = axes.flatten()
-                            
-                            for i, col in enumerate(cols_to_analyze):
-                                if i < len(axes):
-                                    sns.histplot(df_selected[col].dropna(), kde=True, ax=axes[i])
-                                    axes[i].set_title(f"Distribution of {col}")
-                                    axes[i].tick_params(labelrotation=45)
-                            
-                            # Hide unused subplots
-                            for j in range(len(cols_to_analyze), len(axes)):
-                                axes[j].set_visible(False)
-                            
-                            plt.tight_layout()
-                            st.pyplot(fig)
+                        for col in cols_to_analyze:
+                            st.markdown(f"**Distribution of `{col}`**")
+                            try:
+                                fig = plot_distribution(df_selected, col)
+                                st.pyplot(fig, use_container_width=True)
+                            except Exception as e:
+                                st.warning(f"Could not plot distribution for {col}: {str(e)}")
                     else:
                         st.info("Please select at least one numeric column to analyze.")
                 else:
@@ -300,37 +278,11 @@ if st.session_state.runpage == "3_Summary_Statistics" or st.session_state.runpag
                         
                         # Visualizations
                         st.subheader(f"Visualization for {selected_cat_col}")
-                        
-                        # Bar chart for categorical column
-                        fig, ax = plt.subplots(figsize=(12, min(8, len(value_counts) * 0.4)))
-                        bars = sns.barplot(x='Count', y=selected_cat_col, data=value_counts, ax=ax)
-                        
-                        # Add percentage annotations to bars
-                        for i, p in enumerate(bars.patches):
-                            percentage = value_counts.iloc[i]['Percentage']
-                            plt.text(p.get_width() + 0.5, p.get_y() + p.get_height()/2, 
-                                    f'{percentage:.1f}%', 
-                                    ha='left', va='center')
-                        
-                        plt.tight_layout()
-                        st.pyplot(fig)
-                        
-                        # Pie chart for top categories
-                        fig, ax = plt.subplots(figsize=(8, 8))
-                        pie_data = value_counts.head(7)  # Top 7 categories
-                        
-                        # Add "Others" category for the rest
-                        if len(value_counts) > 7:
-                            others_count = value_counts['Count'][7:].sum()
-                            others_row = pd.DataFrame({selected_cat_col: ['Others'], 'Count': [others_count], 
-                                                    'Percentage': [value_counts['Percentage'][7:].sum()]})
-                            pie_data = pd.concat([pie_data, others_row])
-                        
-                        plt.pie(pie_data['Count'], labels=pie_data[selected_cat_col], autopct='%1.1f%%',
-                                startangle=90, shadow=True)
-                        plt.axis('equal')
-                        plt.title(f'Distribution of {selected_cat_col} (Top Categories)')
-                        st.pyplot(fig)
+                        try:
+                            fig = plot_distribution(df_selected, selected_cat_col)
+                            st.pyplot(fig, use_container_width=True)
+                        except Exception as e:
+                            st.warning(f"Could not plot distribution for {selected_cat_col}: {str(e)}")
                 else:
                     st.info("No categorical columns found in the selected columns.")
             
