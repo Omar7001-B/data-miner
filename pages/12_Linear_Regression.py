@@ -120,7 +120,7 @@ if df is not None:
                         title=f"Distribution of {col}",
                         marginal="box"  # Add a box plot on the marginal
                     )
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, use_container_width=True, key=f"overview_dist_{col}")
                 except Exception as e:
                     st.error(f"Could not analyze column {col}: {str(e)}")
         else:
@@ -184,7 +184,7 @@ if df is not None:
                 title=f"Distribution of {target_col}",
                 marginal="box"  # Add a box plot on the marginal
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, use_container_width=True, key="train_target_dist")
             
             # Step 2: Select features
             st.subheader("Step 2: Select Features")
@@ -222,12 +222,6 @@ if df is not None:
                         "Fit intercept",
                         value=True,
                         help="Whether to calculate the intercept for the model. If False, no intercept will be used."
-                    )
-                    
-                    normalize = st.checkbox(
-                        "Normalize",
-                        value=False,
-                        help="If True, the regressors will be normalized before regression by subtracting the mean and dividing by the l2-norm."
                     )
                     
                 with col2:
@@ -339,11 +333,7 @@ if df is not None:
                             status_text.text("Training model...")
                             
                             # Create model with selected parameters
-                            model = LinearRegression(
-                                fit_intercept=fit_intercept,
-                                normalize=normalize,
-                                n_jobs=-1  # Use all processors
-                            )
+                            model = LinearRegression(fit_intercept=fit_intercept, n_jobs=-1)
                             
                             # Create full pipeline
                             pipeline = Pipeline(steps=[
@@ -494,7 +484,7 @@ if df is not None:
                                 )
                             )
                             
-                            st.plotly_chart(fig, use_container_width=True)
+                            st.plotly_chart(fig, use_container_width=True, key="train_actual_vs_predicted")
                             
                             # Display residuals plot
                             st.subheader("Residuals Analysis")
@@ -517,7 +507,7 @@ if df is not None:
                                 annotation_position="bottom right"
                             )
                             
-                            st.plotly_chart(fig, use_container_width=True)
+                            st.plotly_chart(fig, use_container_width=True, key="train_residuals_vs_predicted")
                             
                             # Display histogram of residuals
                             fig = px.histogram(
@@ -527,7 +517,7 @@ if df is not None:
                                 marginal='box'
                             )
                             
-                            st.plotly_chart(fig, use_container_width=True)
+                            st.plotly_chart(fig, use_container_width=True, key="train_residuals_distribution")
                             
                             # Display model coefficients if available
                             if model_coefficients:
@@ -557,10 +547,10 @@ if df is not None:
                                 )
                                 
                                 fig.update_layout(xaxis_tickangle=-45)
-                                st.plotly_chart(fig, use_container_width=True)
+                                st.plotly_chart(fig, use_container_width=True, key="train_coefficient_bar_chart")
                                 
                                 # Display coefficient values in a table
-                                st.dataframe(coef_df, use_container_width=True)
+                                st.dataframe(coef_df, use_container_width=True, key="train_coefficient_table")
                                 
                                 # Interpretation guide
                                 st.info("""
@@ -687,7 +677,7 @@ if df is not None:
                     )
                 )
                 
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, use_container_width=True, key="eval_actual_vs_predicted")
                 
                 # Add an explanation of the plot
                 st.markdown("""
@@ -726,7 +716,7 @@ if df is not None:
                     color_discrete_sequence=['#1f77b4', '#ff7f0e']
                 )
                 
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, use_container_width=True, key="eval_training_vs_test_performance")
                 
                 # Interpretation guidance
                 if r2_train > metrics['R² Score'] * 1.2:  # If training R² is 20% better than test
@@ -777,7 +767,7 @@ if df is not None:
                     annotation_position="bottom right"
                 )
                 
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, use_container_width=True, key="eval_residuals_vs_predicted")
                 
                 # Explanation for residual plot
                 st.markdown("""
@@ -817,7 +807,7 @@ if df is not None:
                     )
                 )
                 
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, use_container_width=True, key="eval_residuals_distribution")
                 
                 # Normal Q-Q plot
                 st.subheader("Normal Q-Q Plot")
@@ -850,7 +840,7 @@ if df is not None:
                     )
                 )
                 
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, use_container_width=True, key="eval_normal_qq_plot")
                 
                 st.markdown("""
                 **Interpretation of Q-Q Plot:**
@@ -881,7 +871,7 @@ if df is not None:
                     ]
                 })
                 
-                st.dataframe(res_stats, use_container_width=True)
+                st.dataframe(res_stats, use_container_width=True, key="eval_residual_statistics")
                 
                 # Interpretation of Shapiro-Wilk test
                 shapiro_p = stats.shapiro(residuals_df['Residuals'])[1]
@@ -954,7 +944,7 @@ if df is not None:
                     )
                     
                     fig.update_layout(yaxis={'categoryorder': 'total ascending'})
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, use_container_width=True, key="eval_top_coefficient_bar_chart")
                     
                     # Standardized coefficients visualization
                     if 'Standardized Coefficient' in top_features.columns:
@@ -972,11 +962,11 @@ if df is not None:
                         )
                         
                         fig.update_layout(yaxis={'categoryorder': 'total ascending'})
-                        st.plotly_chart(fig, use_container_width=True)
+                        st.plotly_chart(fig, use_container_width=True, key="eval_standardized_coefficient_bar_chart")
                     
                     # Display all coefficients in a table
                     st.subheader("All Coefficients")
-                    st.dataframe(coef_df, use_container_width=True)
+                    st.dataframe(coef_df, use_container_width=True, key="eval_all_coefficients_table")
                     
                     # Create regression equation
                     st.subheader("Regression Equation")
@@ -1044,7 +1034,7 @@ if df is not None:
                         )
                         
                         fig.update_layout(yaxis={'categoryorder': 'total ascending'})
-                        st.plotly_chart(fig, use_container_width=True)
+                        st.plotly_chart(fig, use_container_width=True, key="eval_feature_correlation_bar_chart")
                         
                         # Add explanation
                         st.markdown("""
@@ -1077,7 +1067,7 @@ if df is not None:
                 }
                 
                 summary_df = pd.DataFrame(summary_data)
-                st.dataframe(summary_df, use_container_width=True)
+                st.dataframe(summary_df, use_container_width=True, key="eval_model_summary_table")
                 
                 # Final conclusions
                 st.subheader("Model Assessment")
@@ -1339,7 +1329,7 @@ if df is not None:
                                         xaxis={'type': 'category'}
                                     )
                                     
-                                    st.plotly_chart(fig, use_container_width=True)
+                                    st.plotly_chart(fig, use_container_width=True, key="pred_waterfall_chart")
                                     
                                     # Explanation of the waterfall chart
                                     st.markdown("""
@@ -1498,7 +1488,7 @@ if df is not None:
                                 )
                             )
                             
-                            st.plotly_chart(fig, use_container_width=True)
+                            st.plotly_chart(fig, use_container_width=True, key="pred_actual_vs_predicted")
                             
                             # Error distribution
                             st.subheader("Error Distribution")
@@ -1510,7 +1500,7 @@ if df is not None:
                                 marginal='box'
                             )
                             
-                            st.plotly_chart(fig, use_container_width=True)
+                            st.plotly_chart(fig, use_container_width=True, key="pred_error_distribution")
                             
                         else:
                             # Just show distribution of predictions
@@ -1523,7 +1513,7 @@ if df is not None:
                                 marginal='box'
                             )
                             
-                            st.plotly_chart(fig, use_container_width=True)
+                            st.plotly_chart(fig, use_container_width=True, key="pred_prediction_distribution")
                         
                     except Exception as e:
                         st.error(f"An error occurred during prediction: {str(e)}")
@@ -1655,7 +1645,7 @@ if df is not None:
                                             )
                                         )
                                         
-                                        st.plotly_chart(fig, use_container_width=True)
+                                        st.plotly_chart(fig, use_container_width=True, key="pred_actual_vs_predicted_file")
                                     else:
                                         # Just prediction distribution
                                         st.subheader("Prediction Distribution")
@@ -1667,7 +1657,7 @@ if df is not None:
                                             marginal='box'
                                         )
                                         
-                                        st.plotly_chart(fig, use_container_width=True)
+                                        st.plotly_chart(fig, use_container_width=True, key="pred_prediction_distribution_file")
                                     
                                 except Exception as e:
                                     st.error(f"An error occurred during prediction: {str(e)}")
