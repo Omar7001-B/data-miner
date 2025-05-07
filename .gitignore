@@ -52,7 +52,6 @@ Thumbs.db
 *.ipynb
 
 # Local development
-*.csv
 *.xlsx
 *.xls
 *.db
