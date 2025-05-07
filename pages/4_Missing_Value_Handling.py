@@ -238,177 +238,175 @@ if df is not None:
                 if 'col_selection' not in st.session_state:
                     st.session_state['col_selection'] = {col: False for col in columns_with_missing}
                 # --- Sync col_selection with current columns_with_missing ---
-                # Add new columns
                 for col in columns_with_missing:
                     if col not in st.session_state['col_selection']:
                         st.session_state['col_selection'][col] = False
-                # Remove columns that no longer have missing values
                 for col in list(st.session_state['col_selection'].keys()):
                     if col not in columns_with_missing:
                         del st.session_state['col_selection'][col]
                 # --- End sync ---
-                
-                # Select/clear all buttons
-                select_c1, select_c2 = st.columns(2)
-                with select_c1:
-                    if st.button("✅ Select All Columns"):
-                        for col in columns_with_missing:
-                            st.session_state['col_selection'][col] = True
-                with select_c2:
-                    if st.button("❌ Clear All Columns"):
-                        for col in columns_with_missing:
-                            st.session_state['col_selection'][col] = False
-                
-                # Create a multi-select with checkboxes
-                selected_cols = []
-                
+
+                # Show column type in selection UI
+                col_types = {col: str(df[col].dtype) for col in columns_with_missing}
+
                 # Group columns by their missing percentage for better organization
                 high_missing = [col for col in columns_with_missing if missing_summary.loc[col, 'Missing %'] > 50]
                 medium_missing = [col for col in columns_with_missing if 10 <= missing_summary.loc[col, 'Missing %'] <= 50]
                 low_missing = [col for col in columns_with_missing if missing_summary.loc[col, 'Missing %'] < 10]
-                
+
+                def checkbox_label(col):
+                    return f"{col} [{col_types[col]}] ({missing_summary.loc[col, 'Missing Count']:,} missing, {missing_summary.loc[col, 'Missing %']:.1f}%)"
+
                 # Create expandable sections for each group
-                if high_missing:
-                    with st.expander("Columns with High Missing Values (>50%)", expanded=True):
-                        for col in high_missing:
-                            missing_count = missing_summary.loc[col, 'Missing Count']
-                            missing_pct = missing_summary.loc[col, 'Missing %']
-                            checked = st.checkbox(
-                                f"{col} ({missing_count:,} missing, {missing_pct:.1f}%)", 
-                                value=st.session_state['col_selection'][col], 
-                                key=f"col_{col}"
-                            )
-                            st.session_state['col_selection'][col] = checked
-                            if checked:
-                                selected_cols.append(col)
-                
-                if medium_missing:
-                    with st.expander("Columns with Medium Missing Values (10-50%)", expanded=True):
-                        for col in medium_missing:
-                            missing_count = missing_summary.loc[col, 'Missing Count']
-                            missing_pct = missing_summary.loc[col, 'Missing %']
-                            checked = st.checkbox(
-                                f"{col} ({missing_count:,} missing, {missing_pct:.1f}%)", 
-                                value=st.session_state['col_selection'][col], 
-                                key=f"col_{col}"
-                            )
-                            st.session_state['col_selection'][col] = checked
-                            if checked:
-                                selected_cols.append(col)
-                
-                if low_missing:
-                    with st.expander("Columns with Low Missing Values (<10%)", expanded=True):
-                        for col in low_missing:
-                            missing_count = missing_summary.loc[col, 'Missing Count']
-                            missing_pct = missing_summary.loc[col, 'Missing %']
-                            checked = st.checkbox(
-                                f"{col} ({missing_count:,} missing, {missing_pct:.1f}%)", 
-                                value=st.session_state['col_selection'][col], 
-                                key=f"col_{col}"
-                            )
-                            st.session_state['col_selection'][col] = checked
-                            if checked:
-                                selected_cols.append(col)
-            
+                for group, group_name in zip([high_missing, medium_missing, low_missing],
+                                             ["Columns with High Missing Values (>50%)",
+                                              "Columns with Medium Missing Values (10-50%)",
+                                              "Columns with Low Missing Values (<10%)"]):
+                    if group:
+                        with st.expander(group_name, expanded=True):
+                            for col in group:
+                                checked = st.checkbox(
+                                    checkbox_label(col),
+                                    value=st.session_state['col_selection'][col],
+                                    key=f"col_{col}"
+                                )
+                                st.session_state['col_selection'][col] = checked
+
+            # --- Ensure selected_cols is always defined before use ---
+            selected_cols = [col for col in columns_with_missing if st.session_state['col_selection'][col]]
+            st.markdown(f"**Selected columns:** {', '.join(selected_cols) if selected_cols else 'None'}")
+
             with col2:
                 st.markdown("#### Imputation Method")
-                method = st.radio(
-                    "Choose method", 
-                    ["mean", "median", "mode", "fill value", "drop rows", "drop columns"]
-                )
-                
-                # Additional options based on method
-                fill_value = None
-                if method == "fill value":
-                    fill_value = st.text_input("Value to fill with", "0")
-                
-                threshold = None
-                if method in ["drop rows", "drop columns"]:
-                    threshold = st.slider(
-                        "Threshold (% of missing allowed)", 
-                        0, 100, 50,
-                        help="For 'drop rows': Remove rows with more missing % than threshold\nFor 'drop columns': Remove columns with more missing % than threshold"
-                    )
-            
-            # Show selected columns
-            st.markdown(f"**Selected columns:** {', '.join(selected_cols) if selected_cols else 'None'}")
-            
-            # Apply button with progress
-            if st.button("Apply Handling", disabled=not selected_cols):
-                if not selected_cols:
-                    st.warning("Please select at least one column to handle.")
-                else:
-                    progress_bar = st.progress(0)
-                    status_text = st.empty()
-                    
-                    # Process with progress updates
-                    df_handled = df.copy()
-                    
-                    for i, col in enumerate(selected_cols):
-                        progress = int((i / len(selected_cols)) * 100)
-                        progress_bar.progress(progress)
-                        status_text.text(f"Processing column: {col}...")
-                        
-                        if method in ["mean", "median", "mode"]:
-                            if method == "mean" and pd.api.types.is_numeric_dtype(df_handled[col]):
-                                df_handled[col] = df_handled[col].fillna(df_handled[col].mean())
-                            elif method == "median" and pd.api.types.is_numeric_dtype(df_handled[col]):
-                                df_handled[col] = df_handled[col].fillna(df_handled[col].median())
-                            elif method == "mode":
-                                mode_val = df_handled[col].mode()
-                                if not mode_val.empty:
-                                    df_handled[col] = df_handled[col].fillna(mode_val[0])
-                        elif method == "fill value":
-                            # Try to convert fill_value to appropriate type
-                            try:
-                                if pd.api.types.is_numeric_dtype(df_handled[col]):
-                                    df_handled[col] = df_handled[col].fillna(float(fill_value))
-                                elif pd.api.types.is_datetime64_dtype(df_handled[col]):
-                                    df_handled[col] = df_handled[col].fillna(pd.to_datetime(fill_value))
-                                else:
-                                    df_handled[col] = df_handled[col].fillna(str(fill_value))
-                            except:
-                                df_handled[col] = df_handled[col].fillna(str(fill_value))
-                    
-                    # For row or column dropping, apply at the end
-                    if method == "drop rows":
-                        orig_rows = len(df_handled)
-                        df_handled = df_handled.dropna(
-                            axis=0, 
-                            subset=selected_cols, 
-                            thresh=int(len(selected_cols)*(1-threshold/100))
+                if selected_cols:
+                    # Determine types of selected columns
+                    selected_types = {col: str(df[col].dtype) for col in selected_cols}
+                    all_numeric = all(pd.api.types.is_numeric_dtype(df[col]) for col in selected_cols)
+                    all_categorical = all(pd.api.types.is_object_dtype(df[col]) or pd.api.types.is_categorical_dtype(df[col]) for col in selected_cols)
+
+                    # Show only valid methods for the selection
+                    if all_numeric:
+                        method = st.radio(
+                            "Choose method for numeric columns:",
+                            [
+                                ("mean", "Fill with mean (average) value"),
+                                ("median", "Fill with median value"),
+                                ("mode", "Fill with most frequent value (mode)"),
+                                ("fill value", "Fill with a custom value"),
+                                ("drop rows", "Drop rows with missing values"),
+                                ("drop columns", "Drop columns with high missing values")
+                            ],
+                            format_func=lambda x: x[1],
+                            key="impute_method_numeric"
+                        )[0]
+                    elif all_categorical:
+                        method = st.radio(
+                            "Choose method for categorical columns:",
+                            [
+                                ("mode", "Fill with most frequent value (mode)"),
+                                ("fill value", "Fill with a custom value"),
+                                ("drop rows", "Drop rows with missing values"),
+                                ("drop columns", "Drop columns with high missing values")
+                            ],
+                            format_func=lambda x: x[1],
+                            key="impute_method_categorical"
+                        )[0]
+                    else:
+                        method = st.radio(
+                            "Choose method (mixed types):",
+                            [
+                                ("mode", "Fill with most frequent value (mode)"),
+                                ("fill value", "Fill with a custom value"),
+                                ("drop rows", "Drop rows with missing values"),
+                                ("drop columns", "Drop columns with high missing values")
+                            ],
+                            format_func=lambda x: x[1],
+                            key="impute_method_mixed"
+                        )[0]
+
+                    # Additional options based on method
+                    fill_value = None
+                    if method == "fill value":
+                        fill_value = st.text_input("Value to fill with", "0")
+
+                    threshold = None
+                    if method in ["drop rows", "drop columns"]:
+                        threshold = st.slider(
+                            "Threshold (% of missing allowed)",
+                            0, 100, 50,
+                            help="For 'drop rows': Remove rows with more missing % than threshold\nFor 'drop columns': Remove columns with more missing % than threshold"
                         )
-                        rows_dropped = orig_rows - len(df_handled)
-                        status_text.text(f"Dropped {rows_dropped} rows with high missing values.")
-                    
-                    elif method == "drop columns":
-                        to_drop = [col for col in selected_cols if missing_summary.loc[col, 'Missing %'] > threshold]
-                        if to_drop:
-                            df_handled = df_handled.drop(columns=to_drop)
-                            status_text.text(f"Dropped {len(to_drop)} columns with high missing values: {', '.join(to_drop)}")
-                        else:
-                            status_text.text("No columns meet the threshold criteria for dropping.")
-                    
-                    # Complete progress
-                    progress_bar.progress(100)
-                    
-                    # Store result
-                    st.session_state['df_cleaned'] = df_handled
-                    st.success("✅ Missing value handling applied successfully!")
-                    
-                    # Show download button
-                    st.download_button(
-                        "📥 Download Cleaned Data as CSV", 
-                        df_handled.to_csv(index=False), 
-                        file_name="cleaned_data.csv",
-                        mime="text/csv"
+                else:
+                    method = None
+
+            # --- Imputation method selection ---
+            selected_cols = [col for col in columns_with_missing if st.session_state['col_selection'][col]]
+            st.markdown(f"**Selected columns:** {', '.join(selected_cols) if selected_cols else 'None'}")
+
+            # --- Apply button and imputation logic ---
+            if st.button("Apply Handling", disabled=not selected_cols or not method):
+                progress_bar = st.progress(0)
+                status_text = st.empty()
+                df_handled = df.copy()
+                for i, col in enumerate(selected_cols):
+                    progress = int((i / len(selected_cols)) * 100)
+                    progress_bar.progress(progress)
+                    status_text.text(f"Processing column: {col}...")
+                    col_type = str(df[col].dtype)
+                    try:
+                        if method == "mean" and pd.api.types.is_numeric_dtype(df_handled[col]):
+                            df_handled[col] = df_handled[col].fillna(df_handled[col].mean())
+                        elif method == "median" and pd.api.types.is_numeric_dtype(df_handled[col]):
+                            df_handled[col] = df_handled[col].fillna(df_handled[col].median())
+                        elif method == "mode":
+                            mode_val = df_handled[col].mode()
+                            if not mode_val.empty:
+                                df_handled[col] = df_handled[col].fillna(mode_val[0])
+                        elif method == "fill value":
+                            if pd.api.types.is_numeric_dtype(df_handled[col]):
+                                try:
+                                    df_handled[col] = df_handled[col].fillna(float(fill_value))
+                                except Exception:
+                                    df_handled[col] = df_handled[col].fillna(str(fill_value))
+                            elif pd.api.types.is_datetime64_dtype(df_handled[col]):
+                                try:
+                                    df_handled[col] = df_handled[col].fillna(pd.to_datetime(fill_value))
+                                except Exception:
+                                    df_handled[col] = df_handled[col].fillna(str(fill_value))
+                            else:
+                                df_handled[col] = df_handled[col].fillna(str(fill_value))
+                    except Exception as e:
+                        st.warning(f"Could not impute column {col}: {e}")
+                # For row or column dropping, apply at the end
+                if method == "drop rows":
+                    orig_rows = len(df_handled)
+                    df_handled = df_handled.dropna(
+                        axis=0,
+                        subset=selected_cols,
+                        thresh=int(len(selected_cols)*(1-threshold/100))
                     )
-                    
-                    # Offer option to replace original dataframe
-                    if st.button("📥 Replace Original Data with Cleaned Version"):
-                        st.session_state['df'] = df_handled.copy()
-                        st.success("Original data replaced with cleaned version!")
-                        st.rerun()
+                    rows_dropped = orig_rows - len(df_handled)
+                    status_text.text(f"Dropped {rows_dropped} rows with high missing values.")
+                elif method == "drop columns":
+                    to_drop = [col for col in selected_cols if missing_summary.loc[col, 'Missing %'] > threshold]
+                    if to_drop:
+                        df_handled = df_handled.drop(columns=to_drop)
+                        status_text.text(f"Dropped {len(to_drop)} columns with high missing values: {', '.join(to_drop)}")
+                    else:
+                        status_text.text("No columns meet the threshold criteria for dropping.")
+                progress_bar.progress(100)
+                st.session_state['df_cleaned'] = df_handled
+                st.success("✅ Missing value handling applied successfully!")
+                st.download_button(
+                    "📥 Download Cleaned Data as CSV",
+                    df_handled.to_csv(index=False),
+                    file_name="cleaned_data.csv",
+                    mime="text/csv"
+                )
+                if st.button("📥 Replace Original Data with Cleaned Version"):
+                    st.session_state['df'] = df_handled.copy()
+                    st.success("Original data replaced with cleaned version!")
+                    st.rerun()
             
             # Display result if available
             if 'df_cleaned' in st.session_state:
