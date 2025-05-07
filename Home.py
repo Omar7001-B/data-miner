@@ -33,22 +33,39 @@ with container:
         ''', unsafe_allow_html=True)
 
 # Create tabs for detailed information
-tab1, tab2, tab3, tab4 = st.tabs(["Data Upload", "Profiling", "Summary Statistics", "Missing Values"])
+main_tabs = st.tabs([
+    "Data Upload", "Profiling", "Summary Statistics", "Missing Values",
+    "Data Cleaning", "Transformation", "Machine Learning", "Model Evaluation", "Predictions", "Visualization Tools"
+])
 
-with tab1:
+with main_tabs[0]:
     st.markdown("### Data Upload 📤")
     st.markdown("""
     Upload and preview your data with ease:
     - Support for CSV, Excel, and JSON files
     - Interactive data preview with pagination
-    - Sample datasets available
+    - Sample datasets available (including clean and dirty data for testing)
     - Smart data type detection
     """)
+    # Example datasets
+    example_datasets = {
+        "Iris (clean, classification)": "datasets/iris_clean.csv",
+        "Titanic (dirty, missing/duplicates, classification)": "datasets/titanic_dirty.csv",
+        "Synthetic (dirty, missing/duplicates/outliers, regression/classification)": "datasets/synthetic_dirty.csv"
+    }
+    st.markdown("#### Try an Example Dataset:")
+    selected_example = st.selectbox("Choose an example dataset to load:", list(example_datasets.keys()), key="example_dataset_select")
+    if st.button("Load Example Dataset", key="load_example_btn"):
+        import pandas as pd
+        df = pd.read_csv(example_datasets[selected_example])
+        st.session_state.df = df
+        st.success(f"Loaded {selected_example}!")
+        st.dataframe(df.head(), use_container_width=True)
     if st.button("Start Uploading 📤", key="upload_btn"):
         st.session_state.runpage = "1_Data_Upload"
         st.rerun()
 
-with tab2:
+with main_tabs[1]:
     st.markdown("### Data Profiling 🔍")
     st.markdown("""
     Get detailed insights about your data:
@@ -62,7 +79,7 @@ with tab2:
         st.session_state.runpage = "2_Profiling"
         st.rerun()
 
-with tab3:
+with main_tabs[2]:
     st.markdown("### Summary Statistics 📊")
     st.markdown("""
     Comprehensive statistical analysis:
@@ -77,7 +94,7 @@ with tab3:
         st.session_state.runpage = "3_Summary_Statistics"
         st.rerun()
 
-with tab4:
+with main_tabs[3]:
     st.markdown("### Missing Value Handling ❓")
     st.markdown("""
     Advanced missing data tools:
@@ -90,6 +107,86 @@ with tab4:
     """)
     if st.button("Handle Missing Values ❓", key="missing_btn"):
         st.session_state.runpage = "4_Missing_Value_Handling"
+        st.rerun()
+
+with main_tabs[4]:
+    st.markdown("### Data Cleaning 🧹")
+    st.markdown("""
+    Clean your data efficiently:
+    - Remove duplicates
+    - Handle missing values
+    - Convert categorical variables
+    - Visualize missing data patterns
+    """)
+    if st.button("Go to Data Cleaning 🧹", key="cleaning_btn"):
+        st.session_state.runpage = "5_Duplicate_Entries"
+        st.rerun()
+
+with main_tabs[5]:
+    st.markdown("### Data Transformation 🔄")
+    st.markdown("""
+    Transform your data for modeling:
+    - Min-Max scaling
+    - Z-score normalization
+    - Decimal scaling
+    - Feature selection interface
+    """)
+    if st.button("Go to Transformation 🔄", key="transform_btn"):
+        st.session_state.runpage = "7_Data_Scaling"
+        st.rerun()
+
+with main_tabs[6]:
+    st.markdown("### Machine Learning 🤖")
+    st.markdown("""
+    Train and evaluate models:
+    - Classification: Logistic Regression, Decision Tree, KNN
+    - Regression: Linear Regression
+    - Interactive model training interface
+    - Hyperparameter tuning
+    """)
+    if st.button("Go to Machine Learning 🤖", key="ml_btn"):
+        st.session_state.runpage = "9_Logistic_Regression"
+        st.rerun()
+
+with main_tabs[7]:
+    st.markdown("### Model Evaluation & Visualization 📈")
+    st.markdown("""
+    Evaluate and visualize your models:
+    - Classification and regression metrics
+    - Confusion matrix, ROC, PR curves
+    - Residual analysis, Q-Q plots
+    - Custom evaluation and visualizations
+    - Model comparison and feature importance
+    - Learning curves
+    """)
+    if st.button("Go to Model Evaluation 📈", key="eval_btn"):
+        st.session_state.runpage = "13_Model_Evaluation"
+        st.rerun()
+
+with main_tabs[8]:
+    st.markdown("### Make Predictions 🔮")
+    st.markdown("""
+    Use trained models to make predictions:
+    - Single and batch predictions
+    - File upload for predictions
+    - Download results
+    - Visualize prediction distributions
+    """)
+    if st.button("Go to Predictions 🔮", key="pred_btn"):
+        st.session_state.runpage = "14_Make_Predictions"
+        st.rerun()
+
+with main_tabs[9]:
+    st.markdown("### Advanced Visualization Tools 📊")
+    st.markdown("""
+    Explore advanced visualizations:
+    - Model comparison (radar, bar charts)
+    - Feature importance and correlation
+    - Learning curves and interpretation
+    - Custom data visualizations
+    """)
+    if st.button("Go to Visualization Tools 📊", key="viz_btn"):
+        st.session_state.runpage = "15_Model_Visualization"
         st.rerun()
 
 # Quick action cards
