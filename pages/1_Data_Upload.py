@@ -98,19 +98,62 @@ else:
     with example_tab:
         example_option = st.selectbox(
             "Choose an example dataset",
-            ["Iris Flower Dataset", "Titanic Passengers", "Wine Quality"]
+            [
+                "Iris Flower Dataset (sklearn)",
+                "Titanic Passengers (seaborn)",
+                "Wine Quality (UCI)",
+                "Breast Cancer (sklearn)",
+                "Boston Housing (sklearn)",
+                "Digits (sklearn)",
+                "Synthetic Dirty (code snippet)"
+            ]
         )
         
         if st.button("Load Example"):
             with st.spinner("Loading example dataset..."):
                 try:
-                    if example_option == "Iris Flower Dataset":
-                        df = pd.read_csv("https://raw.githubusercontent.com/mwaskom/seaborn-data/master/iris.csv")
-                    elif example_option == "Titanic Passengers":
-                        df = pd.read_csv("https://raw.githubusercontent.com/datasciencedojo/datasets/master/titanic.csv")
-                    elif example_option == "Wine Quality":
+                    if example_option == "Iris Flower Dataset (sklearn)":
+                        from sklearn.datasets import load_iris
+                        data = load_iris(as_frame=True)
+                        df = data.frame
+                    elif example_option == "Titanic Passengers (seaborn)":
+                        import seaborn as sns
+                        df = sns.load_dataset('titanic')
+                    elif example_option == "Wine Quality (UCI)":
                         df = pd.read_csv("https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-red.csv", sep=";")
-                    
+                    elif example_option == "Breast Cancer (sklearn)":
+                        from sklearn.datasets import load_breast_cancer
+                        data = load_breast_cancer(as_frame=True)
+                        df = data.frame
+                    elif example_option == "Boston Housing (sklearn)":
+                        from sklearn.datasets import load_boston
+                        data = load_boston()
+                        import numpy as np
+                        df = pd.DataFrame(data.data, columns=data.feature_names)
+                        df['target'] = data.target
+                    elif example_option == "Digits (sklearn)":
+                        from sklearn.datasets import load_digits
+                        data = load_digits(as_frame=True)
+                        df = data.frame
+                    elif example_option == "Synthetic Dirty (code snippet)":
+                        st.info("""
+                        To generate a synthetic dirty dataset, run this code in your Python environment:
+                        ```python
+                        import pandas as pd
+                        import numpy as np
+                        np.random.seed(42)
+                        df = pd.DataFrame({
+                            'id': range(1, 21),
+                            'feature1': [10,12,10,15,13,1000,14,13,12,np.nan,11,10,15,14,13,12,10,1000,11,10],
+                            'feature2': [5.2,np.nan,5.2,8.1,7.5,8.0,7.8,7.5,6.9,7.0,5.5,5.2,8.1,7.8,7.5,6.9,5.2,8.0,5.5,5.2],
+                            'feature3': ['cat','dog','cat','cat','dog','cat',np.nan,'dog','cat','dog','cat','cat','cat','dog','dog','cat','cat','cat','cat','cat'],
+                            'target': [100,110,100,200,150,10000,160,150,120,130,105,100,200,160,150,120,100,10000,105,100]
+                        })
+                        df.to_csv('synthetic_dirty.csv', index=False)
+                        ```
+                        Then upload 'synthetic_dirty.csv' here.
+                        """)
+                        raise Exception("Synthetic dataset must be generated locally.")
                     time.sleep(0.5)  # Simulate processing for better UX
                     st.session_state['df'] = df
                     st.success(f"✅ Successfully loaded {example_option}!")
