@@ -44,23 +44,8 @@ with main_tabs[0]:
     Upload and preview your data with ease:
     - Support for CSV, Excel, and JSON files
     - Interactive data preview with pagination
-    - Sample datasets available (including clean and dirty data for testing)
     - Smart data type detection
     """)
-    # Example datasets
-    example_datasets = {
-        "Iris (clean, classification)": "datasets/iris_clean.csv",
-        "Titanic (dirty, missing/duplicates, classification)": "datasets/titanic_dirty.csv",
-        "Synthetic (dirty, missing/duplicates/outliers, regression/classification)": "datasets/synthetic_dirty.csv"
-    }
-    st.markdown("#### Try an Example Dataset:")
-    selected_example = st.selectbox("Choose an example dataset to load:", list(example_datasets.keys()), key="example_dataset_select")
-    if st.button("Load Example Dataset", key="load_example_btn"):
-        import pandas as pd
-        df = pd.read_csv(example_datasets[selected_example])
-        st.session_state.df = df
-        st.success(f"Loaded {selected_example}!")
-        st.dataframe(df.head(), use_container_width=True)
     if st.button("Start Uploading 📤", key="upload_btn"):
         st.session_state.runpage = "1_Data_Upload"
         st.rerun()
@@ -210,4 +195,35 @@ with col2:
             st.markdown("[Click here to visit the repository](https://github.com/Omar7001-B/data-miner)")
 
 # Footer
-create_footer() 
+create_footer()
+
+# Detailed Testing Scenarios Table
+st.markdown("""
+---
+
+## 🧪 Detailed Testing Scenarios
+
+Below is a reference table for testing each page of DataMiner, including which columns to use and what output to expect:
+
+| Page                        | Dataset         | Short Story & Steps                                                                                                   | Columns to Use (Target/Features)                | Expected Output/Result                                  |
+|-----------------------------|-----------------|----------------------------------------------------------------------------------------------------------------------|-------------------------------------------------|--------------------------------------------------------|
+| 1_Data_Upload.py            | Iris            | Upload iris.csv. Preview the data and check column names.                                                            | All columns                                     | Data preview, column names, row count                  |
+| 2_Profiling.py              | Titanic         | Upload titanic.csv. Profile the data: see missing values, distributions, and types.                                  | All columns                                     | Summary stats, missing value report, histograms        |
+| 3_Summary_Statistics.py     | Wine Quality    | Upload winequality-red.csv. View means, medians, and ranges for each property.                                       | All columns                                     | Table of stats, boxplots, correlation matrix           |
+| 4_Missing_Value_Handling.py | Titanic         | Upload titanic.csv. Impute missing "Age", drop "Cabin".                                                              | Age, Cabin                                      | Imputed Age, Cabin removed, before/after comparison    |
+| 5_Duplicate_Entries.py      | Titanic         | Upload titanic.csv (with duplicates). Remove duplicates and see row count change.                                    | All columns                                     | Duplicate count, cleaned data, row count difference    |
+| 6_Categorical_Conversion.py | Titanic         | Upload titanic.csv. Convert "Sex" and "Embarked" to numeric/categorical codes.                                       | Sex, Embarked                                   | Encoded columns, mapping table                        |
+| 7_Data_Scaling.py           | Wine Quality    | Upload winequality-red.csv. Scale "alcohol" and "sulphates" to 0-1.                                                  | alcohol, sulphates                              | Scaled columns, min/max values                        |
+| 8_Feature_Selection.py      | Breast Cancer   | Upload breast_cancer.csv. Select top 5 features for predicting "target".                                             | All features, target                            | Feature ranking, selected features                    |
+| 9_Logistic_Regression.py    | Titanic         | Upload titanic.csv. Target: "Survived", Features: "Pclass", "Sex", "Age", etc. Train and evaluate.                  | Survived (target), Pclass, Sex, Age, etc.       | Accuracy, confusion matrix, coefficients              |
+| 10_Decision_Tree.py         | Iris            | Upload iris.csv. Target: "species", Features: all others. Train and visualize tree.                                  | species (target), sepal/petal features          | Tree diagram, feature importance, accuracy            |
+| 11_KNN_Classifier.py        | Iris            | Upload iris.csv. Target: "species", Features: all others. Try different K values.                                    | species (target), sepal/petal features          | Accuracy for each K, confusion matrix                 |
+| 12_Linear_Regression.py     | Boston Housing  | Upload BostonHousing.csv. Target: "MEDV", Features: all others. Train and evaluate.                                  | MEDV (target), all other columns                | R², RMSE, scatter plot, residuals                     |
+| 13_Model_Evaluation.py      | Titanic         | Upload CSV with "Survived" (actual) and "Predicted" columns. View metrics and confusion matrix.                      | Survived, Predicted                             | Accuracy, precision, recall, confusion matrix         |
+| 14_Make_Predictions.py      | Iris            | Upload new iris samples. Use trained model to predict "species".                                                     | sepal/petal features                            | Predicted species, probability table                  |
+| 15_Model_Visualization.py   | Iris            | Upload iris.csv, train models. Compare models, see feature importance, and view learning curves.                     | species (target), sepal/petal features          | Model comparison charts, feature importance, curves   |
+
+---
+
+**Tip:** Use the columns listed for each test. Outputs include tables, plots, and metrics to help you verify each feature!
+""") 

@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import time
 from utils import load_css, create_footer, display_dataset_info
+import os
 
 st.set_page_config(page_title="Data Upload", page_icon="📤", layout="wide")
 load_css()
@@ -59,7 +60,7 @@ if 'df' in st.session_state:
         
 else:
     # File uploader with options
-    upload_tab, example_tab = st.tabs(["Upload Your File", "Use Example Dataset"])
+    upload_tab, example_tab, local_tab = st.tabs(["Upload Your File", "Use Example Dataset", "Use Local Dataset"])
     
     with upload_tab:
         uploaded_file = st.file_uploader(
@@ -161,6 +162,24 @@ else:
                     st.rerun()
                 except Exception as e:
                     st.error(f"Error loading example dataset: {e}")
+
+    with local_tab:
+        local_files = [f for f in os.listdir('datasets') if f.endswith('.csv')]
+        if not local_files:
+            st.info("No CSV files found in the /datasets folder.")
+        else:
+            selected_local = st.selectbox("Select a local dataset to load:", local_files)
+            if st.button("Load Local Dataset"):
+                path = os.path.join('datasets', selected_local)
+                try:
+                    df = pd.read_csv(path)
+                    st.session_state['df'] = df
+                    st.success(f"✅ Successfully loaded {selected_local}!")
+                    st.dataframe(df.head(), use_container_width=True)
+                    st.toast(f"Loaded {selected_local} with {df.shape[0]} rows and {df.shape[1]} columns")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Error loading local dataset: {e}")
 
     # Display helpful tips
     st.markdown("""
