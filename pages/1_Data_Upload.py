@@ -41,7 +41,13 @@ if 'df' in st.session_state:
             if st.button("◀️ Previous"):
                 st.session_state["page"] = max(1, st.session_state.get("page", 1) - 1)
         with col2:
-            page = st.number_input("Page", min_value=1, max_value=total_pages, value=st.session_state.get("page", 1))
+            # Ensure the default value is within bounds
+            current_page = st.session_state.get("page", 1)
+            if current_page < 1:
+                current_page = 1
+            if current_page > total_pages:
+                current_page = total_pages
+            page = st.number_input("Page", min_value=1, max_value=total_pages, value=current_page)
             st.session_state["page"] = page
         with col3:
             if st.button("Next ▶️"):
