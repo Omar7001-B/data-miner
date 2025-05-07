@@ -237,6 +237,16 @@ if df is not None:
                 # Initialize session state for checkboxes if not exists
                 if 'col_selection' not in st.session_state:
                     st.session_state['col_selection'] = {col: False for col in columns_with_missing}
+                # --- Sync col_selection with current columns_with_missing ---
+                # Add new columns
+                for col in columns_with_missing:
+                    if col not in st.session_state['col_selection']:
+                        st.session_state['col_selection'][col] = False
+                # Remove columns that no longer have missing values
+                for col in list(st.session_state['col_selection'].keys()):
+                    if col not in columns_with_missing:
+                        del st.session_state['col_selection'][col]
+                # --- End sync ---
                 
                 # Select/clear all buttons
                 select_c1, select_c2 = st.columns(2)
